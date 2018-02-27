@@ -17,6 +17,7 @@ public class Client {
     private BufferedInputStream bis;
     private BufferedOutputStream bos;
     FrontEndInterface stub;
+    Registry registry;
 
     private Client() {
     }
@@ -32,14 +33,6 @@ public class Client {
         scanner = new Scanner(System.in);
         client = new Client();
         client.printCommands();
-
-        try {
-            Registry registry = LocateRegistry.getRegistry("127.0.01", 38048);
-            client.stub = (FrontEndInterface) registry.lookup("FrontEnd");
-        } catch (Exception e) {
-            System.err.println("Client exception: " + e.toString());
-            e.printStackTrace();
-        }
 
         dance:
         while (true) {
@@ -75,7 +68,7 @@ public class Client {
                     }
 
                     try {
-                        client.connect();
+                        client.connect(scanner);
                     } catch (InputException e) {
                         System.out.println("[-] " + e.getMessage());
                         System.out.println();
@@ -410,8 +403,36 @@ public class Client {
         //
     }
 
-    public void connect() throws InputException {
+    public void connect(Scanner scanner) throws InputException {
+        String host;
+        int port;
+        InetAddress addr;
 
+        System.out.println("[*] Please enter a hostname or IP address to connect to: ");
+        System.out.print("> ");
+
+        try {
+            host = scanner.nextLine();
+        } catch (NoSuchElementException | IllegalStateException e) {
+            throw new InputException("Error when reading hostname");
+        }
+
+        System.out.println("[*] Please enter the port: ");
+        System.out.print("> ");
+
+        try {
+            port = scanner.nextInt();
+        } catch (IllegalStateException | InputMismatchException e) {
+            throw new InputException("Unable to read port number");
+        }
+
+        try {
+            registry = LocateRegistry.getRegistry(host, port);
+            stub = (FrontEndInterface) registry.lookup("FrontEnd");
+        } catch (Exception e) {
+            System.out.println("[-] Unable to connect to front end server: " + e.toString());
+            e.printStackTrace();
+        }
     }
 
     public boolean quit(Scanner scanner) {
