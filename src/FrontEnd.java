@@ -34,7 +34,7 @@ public class FrontEnd implements FrontEndInterface {
             //Get the server stubs from the registry to be used by the master
             frontEnd.server1 = (ServerInterface) registry.lookup("Server1");
             frontEnd.server2 = (ServerInterface) registry.lookup("Server2");
-            frontEnd.server3 = (ServerInterface) registry.lookup("Server2");
+            frontEnd.server3 = (ServerInterface) registry.lookup("Server3");
 
             System.out.println("[+] Front End Server ready on port 38048");
         } catch (Exception e) {
