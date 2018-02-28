@@ -3,6 +3,10 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 public class Server2 implements ServerInterface {
+
+    public void ping() {
+    }
+
     public static void main(String args[]) {
 
         try {
@@ -13,7 +17,7 @@ public class Server2 implements ServerInterface {
 
             //Create front end, add it to registry to be used by clients
             Server1 server2 = new Server1();
-            FrontEndInterface stub = (FrontEndInterface) UnicastRemoteObject.exportObject(server2, 0);
+            ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(server2, 0);
             Registry registry = LocateRegistry.getRegistry("127.0.0.1", 38048);
             registry.rebind("Server2", stub);
 

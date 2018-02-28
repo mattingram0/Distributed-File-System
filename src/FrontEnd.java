@@ -2,6 +2,7 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Scanner;
 
 public class FrontEnd implements FrontEndInterface {
 
@@ -11,10 +12,6 @@ public class FrontEnd implements FrontEndInterface {
 
 
     public FrontEnd() {
-    }
-
-    public String sayHello() {
-        return "Sucessful remote invocation!";
     }
 
     public static void main(String args[]) {
@@ -41,6 +38,9 @@ public class FrontEnd implements FrontEndInterface {
             System.out.println("[-] Unable to run Front End Server: " + e.toString());
             e.printStackTrace();
         }
-    }
 
+
+    }
 }
+
+/* We either monitor using periodic UDP calls, if one fails we set a flag not to use it, keep sending out calls to it though when we get a succesful call.*/
