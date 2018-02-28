@@ -16,7 +16,7 @@ public class Client {
     private DataOutputStream dos;
     private BufferedInputStream bis;
     private BufferedOutputStream bos;
-    FrontEndInterface stub;
+    FrontEndInterface frontEnd;
     Registry registry;
 
     private Client() {
@@ -406,7 +406,6 @@ public class Client {
     public void connect(Scanner scanner) throws InputException {
         String host;
         int port;
-        InetAddress addr;
 
         System.out.println("[*] Please enter a hostname or IP address to connect to: ");
         System.out.print("> ");
@@ -428,7 +427,7 @@ public class Client {
 
         try {
             registry = LocateRegistry.getRegistry(host, port);
-            stub = (FrontEndInterface) registry.lookup("FrontEnd");
+            frontEnd = (FrontEndInterface) registry.lookup("FrontEnd");
         } catch (Exception e) {
             System.out.println("[-] Unable to connect to front end server: " + e.toString());
             e.printStackTrace();
