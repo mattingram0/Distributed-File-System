@@ -1,3 +1,4 @@
+import java.io.File;
 import java.lang.reflect.Array;
 import java.rmi.Remote;
 import java.rmi.registry.Registry;
@@ -12,6 +13,10 @@ public class FrontEnd implements FrontEndInterface {
     ServerInterface server1;
     ServerInterface server2;
     ServerInterface server3;
+
+    File fileList1;
+    File fileList2;
+    File fileList3;
 
 
     public FrontEnd() {
@@ -35,6 +40,17 @@ public class FrontEnd implements FrontEndInterface {
             frontEnd.server1 = (ServerInterface) registry.lookup("Server1");
             frontEnd.server2 = (ServerInterface) registry.lookup("Server2");
             frontEnd.server3 = (ServerInterface) registry.lookup("Server3");
+
+            //Create files if they don't exist
+            if (!(frontEnd.fileList1 = new File("server1.txt")).exists()) {
+                frontEnd.fileList1.createNewFile();
+            }
+            if (!(frontEnd.fileList2 = new File("server2.txt")).exists()) {
+                frontEnd.fileList2.createNewFile();
+            }
+            if (!(frontEnd.fileList3 = new File("server3.txt")).exists()) {
+                frontEnd.fileList3.createNewFile();
+            }
 
             System.out.println("[+] Front End Server ready on port 38048");
         } catch (Exception e) {

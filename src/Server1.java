@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -19,6 +20,7 @@ public class Server1 implements ServerInterface {
 
     public String list() throws RemoteException {
         StringBuilder fileList = new StringBuilder();
+        ArrayList<String> files = new ArrayList<>();
         StringBuilder directoryList = new StringBuilder();
 
         File folder = new File(".");
@@ -26,9 +28,11 @@ public class Server1 implements ServerInterface {
 
         for (File file : listOfFiles) {
             if (file.isFile()) {
+                files.add(file.getName());
                 fileList.append(file.getName() + "\n");
             }
             if (file.isDirectory()) {
+                files.add("[D] " + file.getName()); //TODO: changed this
                 directoryList.append("[D] " + file.getName() + "\n");
             }
         }
