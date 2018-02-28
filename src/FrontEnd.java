@@ -1,7 +1,10 @@
+import java.lang.reflect.Array;
+import java.rmi.Remote;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class FrontEnd implements FrontEndInterface {
@@ -38,8 +41,48 @@ public class FrontEnd implements FrontEndInterface {
             System.out.println("[-] Unable to run Front End Server: " + e.toString());
             e.printStackTrace();
         }
+    }
 
+    public String list() {
+        ArrayList<ServerInterface> servers;
+        StringBuilder listing = new StringBuilder();
+        int counter = 0;
 
+        servers = checkStatus();
+
+        if (servers.size() == 0) {
+            return "0"; //No servers available TODO: handle this on client side
+        } else {
+            for (ServerInterface server : servers) {
+                try {
+                    listing.append(server.list());
+                } catch (RemoteException e) {
+                    System.out.println("[-] " + server.toString() + "failed during list operation");
+                    counter++;
+                }
+            }
+        }
+
+        if (counter == servers.size()) {
+            return "0"; //All servers went down during list operation
+        } else {
+            return listing.toString();
+        }
+    }
+
+    public ArrayList<ServerInterface> checkStatus() {
+        ServerInterface allServers[] = {server1, server2, server3};
+        ArrayList<ServerInterface> upServers = new ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            try {
+                allServers[i].ping();
+                upServers.add(allServers[i]);
+            } catch (RemoteException e) {
+                System.out.println("[-] " + server1.toString() + "not available");
+            }
+        }
+        return upServers;
     }
 }
 

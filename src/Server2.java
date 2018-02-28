@@ -1,3 +1,4 @@
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
@@ -6,6 +7,28 @@ public class Server2 implements ServerInterface {
 
     public void ping() {
     }
+
+    public int checkSpace() throws RemoteException {
+        return 0;
+    }
+
+    ;
+
+    public String list() throws RemoteException {
+        return "";
+    }
+
+    ;
+
+    public void download() throws RemoteException {
+    }
+
+    ;
+
+    public void upload() throws RemoteException {
+    }
+
+    ;
 
     public static void main(String args[]) {
 
