@@ -6,6 +6,8 @@ import java.rmi.server.UnicastRemoteObject;
 
 public interface ServerInterface extends Remote {
 
+    int numFiles() throws RemoteException;
+
     void ping() throws RemoteException;
 
     int checkSpace() throws RemoteException;

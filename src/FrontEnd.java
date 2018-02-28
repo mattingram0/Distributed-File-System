@@ -43,6 +43,38 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
+    public void upload() {
+        ArrayList<ServerInterface> servers;
+        ServerInterface emptiestServer = null;
+        int numFiles;
+        int minimum = Integer.MAX_VALUE;
+
+        servers = checkStatus();
+
+        if (servers.size() == 0) {
+            // handle no servers available
+        } else {
+            for (ServerInterface server : servers) {
+                try {
+                    numFiles = server.numFiles();
+
+                    if (numFiles < minimum) {
+                        minimum = numFiles;
+                        emptiestServer = server;
+                    }
+                } catch (RemoteException e) {
+                    System.out.println("[-] " + server.toString() + "failed during list operation");
+                }
+            }
+        }
+
+        if (emptiestServer == null) {
+            // handle all servers failed to respond to list operation
+        } else {
+            //create socket connection to handle the upload, check the upload doesn't exist on any of them
+        }
+    }
+
     public String list() {
         ArrayList<ServerInterface> servers;
         StringBuilder listing = new StringBuilder();
