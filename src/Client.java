@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.InputMismatchException;
@@ -93,12 +94,7 @@ public class Client {
 
                 case "LIST":
                     if (client.connected) {
-                        try {
-                            client.list();
-                        } catch (TransferException e) {
-                            System.out.println("[-] " + e.getMessage());
-                            System.out.println();
-                        }
+                        client.list();
                     } else {
                         System.out.println("[-] Not connected to a server! Please use CONN to connect to a fileserver \n");
                     }
@@ -399,8 +395,20 @@ public class Client {
         System.out.println("");
     }
 
-    public void list() throws TransferException {
-        //
+    public void list() {
+        String listing;
+
+        try {
+            listing = frontEnd.list();
+
+            if (listing.equals("0")) {
+                System.out.println("[-] Server error, unable to retrieve directory listing");
+            } else {
+                System.out.println(listing);
+            }
+        } catch (RemoteException e) {
+            System.out.println("[-] Server error: " + e.getMessage());
+        }
     }
 
     public void connect(Scanner scanner) throws InputException {
