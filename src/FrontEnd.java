@@ -1,4 +1,4 @@
-import java.io.File;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.rmi.Remote;
 import java.rmi.registry.Registry;
@@ -6,6 +6,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class FrontEnd implements FrontEndInterface {
@@ -14,6 +15,7 @@ public class FrontEnd implements FrontEndInterface {
     ServerInterface server2;
     ServerInterface server3;
 
+    File duplicates;
     File fileList1;
     File fileList2;
     File fileList3;
@@ -41,7 +43,10 @@ public class FrontEnd implements FrontEndInterface {
             frontEnd.server2 = (ServerInterface) registry.lookup("Server2");
             frontEnd.server3 = (ServerInterface) registry.lookup("Server3");
 
-            //Create files if they don't exist
+            //Create duplicates file if it doesn't exist
+            if (!(frontEnd.duplicates = new File("duplicates.txt")).exists()) {
+                frontEnd.duplicates.createNewFile();
+            }
             if (!(frontEnd.fileList1 = new File("server1.txt")).exists()) {
                 frontEnd.fileList1.createNewFile();
             }
@@ -60,7 +65,12 @@ public class FrontEnd implements FrontEndInterface {
     }
 
     public void upload() {
+        ArrayList<String> filesInList;
+        ArrayList<String> duplicateFiles = new ArrayList<>();
+        String fileInput;
         ArrayList<ServerInterface> servers;
+        ArrayList<String> filesOnServer;
+        BufferedReader reader;
         ServerInterface emptiestServer = null;
         int numFiles;
         int minimum = Integer.MAX_VALUE;
@@ -72,12 +82,31 @@ public class FrontEnd implements FrontEndInterface {
         } else {
             for (ServerInterface server : servers) {
                 try {
+                    //Find the emptiest server
                     numFiles = server.numFiles();
 
                     if (numFiles < minimum) {
                         minimum = numFiles;
                         emptiestServer = server;
                     }
+
+                    filesOnServer = server.list();
+
+                    try {
+                        reader = new BufferedReader(new FileReader(duplicates));
+
+                        while ((fileInput = reader.readLine()) != null) {
+                            duplicateFiles.add(fileInput);
+                        }
+
+                        while ((fileInput = reader.readLine()) != null) {
+                            duplicateFiles.add(fileInput);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace(); //TODO proper exception handling
+                    }
+
+
                 } catch (RemoteException e) {
                     System.out.println("[-] " + server.toString() + "failed during list operation");
                 }
@@ -120,12 +149,15 @@ public class FrontEnd implements FrontEndInterface {
 
     public ArrayList<ServerInterface> checkStatus() {
         ServerInterface allServers[] = {server1, server2, server3};
+        File allFileLists[] = {fileList1, fileList2, fileList3};
         ArrayList<ServerInterface> upServers = new ArrayList<>();
+        ArrayList<File> upFileLists = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {
             try {
                 allServers[i].ping();
                 upServers.add(allServers[i]);
+                upFileLists.add(allFileLists[i]);
             } catch (RemoteException e) {
                 System.out.println("[-] " + server1.toString() + "not available");
             }

@@ -9,19 +9,21 @@ import java.util.ArrayList;
 
 public class Server1 implements ServerInterface {
 
-    public void ping() {
+    public int numFiles() {
+        return 0;
+    }
+
+    public void ping() throws RemoteException {
     }
 
     public int checkSpace() throws RemoteException {
         return 0;
     }
 
-    ;
-
-    public String list() throws RemoteException {
+    public ArrayList<String> list() throws RemoteException {
         StringBuilder fileList = new StringBuilder();
         ArrayList<String> files = new ArrayList<>();
-        StringBuilder directoryList = new StringBuilder();
+        ArrayList<String> directories = new ArrayList<>();
 
         File folder = new File(".");
         File[] listOfFiles = folder.listFiles();
@@ -29,15 +31,16 @@ public class Server1 implements ServerInterface {
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 files.add(file.getName());
-                fileList.append(file.getName() + "\n");
             }
             if (file.isDirectory()) {
-                files.add("[D] " + file.getName()); //TODO: changed this
-                directoryList.append("[D] " + file.getName() + "\n");
+                directories.add("[D] " + file.getName());
             }
         }
 
-        return directoryList.toString() + fileList.toString();
+        ArrayList<String> listing = new ArrayList<>(directories);
+        listing.addAll(files);
+
+        return listing;
     }
 
     public void download() throws RemoteException {
@@ -63,6 +66,7 @@ public class Server1 implements ServerInterface {
             ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(server1, 0);
             Registry registry = LocateRegistry.getRegistry("127.0.0.1", 38048);
             registry.rebind("Server1", stub);
+
 
             System.out.println("[+] Server 1 ready on port 38048");
         } catch (Exception e) {
