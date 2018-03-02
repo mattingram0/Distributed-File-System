@@ -1,4 +1,6 @@
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -37,6 +39,12 @@ public class Server3 implements ServerInterface {
     ;
 
     public void delete(String filename) throws RemoteException {
+        try {
+            Files.delete(new File(filename).toPath()); //TODO: test this
+        } catch (IOException e) {
+            System.out.println("[-] Unable to delete file from Server2");
+            e.printStackTrace();
+        }
     }
 
     public static void main(String args[]) {
