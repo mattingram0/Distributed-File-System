@@ -67,31 +67,34 @@ public class FrontEnd implements FrontEndInterface {
     }
 
     public void upload() {
-        ServerInterface server; //A single server
         ServerInterface emptiestServer = null;
-        ServerInterface listOfServers[];
-        listOfServers = checkStatus().getServers().toArray(new ServerInterface[0]);
+        ServerList availableServers = checkStatus();
+        ArrayList<ServerInterface> listOfServers = availableServers.getServers();
         int numFiles;
         int minimum = Integer.MAX_VALUE;
 
+        //Ensure there are servers available
+        if (listOfServers.size() == 0) {
+            // TODO handle no servers available
+        }
 
-        if (listOfServers.length == 0) {
-            // handle no servers available
-        } else {
-
-            if (changedState = true) {
-                updateServers();
-            } else {
-
-            }
+        //Update the necessary servers
+        if (changedState = true) {
+            updateServers(availableServers);
         }
 
         //Find the emptiest server
-        numFiles = server.numFiles();
+        for (ServerInterface server : listOfServers) {
+            try {
+                numFiles = server.numFiles();
 
-        if (numFiles < minimum) {
-            minimum = numFiles;
-            emptiestServer = server;
+                if (numFiles < minimum) {
+                    minimum = numFiles;
+                    emptiestServer = server;
+                }
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
         }
 
         if (emptiestServer == null) {
@@ -101,7 +104,7 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public void updateServers() {
+    public void updateServers(ServerList availableServers) {
         ServerInterface server; //A single server
         ArrayList<ServerInterface> listOfServers = new ArrayList<>(); //An arraylist of available servers
         ArrayList<File> listOfFileLists; //An arraylist containing the fileList of each server
@@ -110,8 +113,6 @@ public class FrontEnd implements FrontEndInterface {
         ArrayList<String> actualFilesOnServer; //A list containing the files actually on the server
         ArrayList<ArrayList<String>> listOfActualFilesOnServer; //An arraylist containing the list of files actually on the server, for each server
         ArrayList<String> duplicateFiles; //An arraylist containing all files that should be on every server
-        ServerList availableServers = checkStatus();
-
 
         listOfServers = availableServers.getServers();
         listOfFileLists = availableServers.getFileLists();
@@ -127,24 +128,33 @@ public class FrontEnd implements FrontEndInterface {
 
             for (String file : actualFilesOnServer) {
                 if (!correctFilesOnServer.contains(file) && !duplicateFiles.contains(file)) {
-                    server.delete(file);
+                    try {
+                        server.delete(file);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
+
+        changedState = false;
     }
 
     public ArrayList<ArrayList<String>> list() { //TODO: add duplicates?
-        ArrayList<ServerInterface> servers;
-        ArrayList<ArrayList<String>> listing;
-        servers = checkStatus().getServers();
+        ServerList availableServers = checkStatus();
+        ArrayList<ServerInterface> servers = availableServers.getServers();
+
+        if (servers.size() == 0) {
+            //TODO: handles no servers available
+        }
 
         //Update servers first if necessary
         if (changedState = true) {
-            updateServers();
+            updateServers(availableServers);
         }
 
-        listing = getActualFiles(servers);
-        return listing;
+        return getActualFiles(servers);
+
     }
 
     private ArrayList<String> getDuplicateFiles() {
