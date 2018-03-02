@@ -1,5 +1,4 @@
 import java.io.*;
-import java.lang.reflect.Array;
 import java.rmi.Remote;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
@@ -14,6 +13,9 @@ public class FrontEnd implements FrontEndInterface {
     ServerInterface server1;
     ServerInterface server2;
     ServerInterface server3;
+
+    ArrayList<ServerInterface> upServers;
+    boolean changedState = false; //Set to true when a server fails or comes back, to recheck files
 
     File duplicates;
     File fileList1;
@@ -43,7 +45,7 @@ public class FrontEnd implements FrontEndInterface {
             frontEnd.server2 = (ServerInterface) registry.lookup("Server2");
             frontEnd.server3 = (ServerInterface) registry.lookup("Server3");
 
-            //Create duplicates file if it doesn't exist
+            //Create text documents holding the files that should exist on each server, and a separate doc for duplicates
             if (!(frontEnd.duplicates = new File("duplicates.txt")).exists()) {
                 frontEnd.duplicates.createNewFile();
             }
@@ -65,52 +67,31 @@ public class FrontEnd implements FrontEndInterface {
     }
 
     public void upload() {
-        ArrayList<String> filesInList;
-        ArrayList<String> duplicateFiles = new ArrayList<>();
-        String fileInput;
-        ArrayList<ServerInterface> servers;
-        ArrayList<String> filesOnServer;
-        BufferedReader reader;
+        ServerInterface server; //A single server
         ServerInterface emptiestServer = null;
+        ServerInterface listOfServers[];
+        listOfServers = checkStatus().getServers().toArray(new ServerInterface[0]);
         int numFiles;
         int minimum = Integer.MAX_VALUE;
 
-        servers = checkStatus();
 
-        if (servers.size() == 0) {
+        if (listOfServers.length == 0) {
             // handle no servers available
         } else {
-            for (ServerInterface server : servers) {
-                try {
-                    //Find the emptiest server
-                    numFiles = server.numFiles();
 
-                    if (numFiles < minimum) {
-                        minimum = numFiles;
-                        emptiestServer = server;
-                    }
+            if (changedState = true) {
+                updateServers();
+            } else {
 
-                    filesOnServer = server.list();
-
-                    try {
-                        reader = new BufferedReader(new FileReader(duplicates));
-
-                        while ((fileInput = reader.readLine()) != null) {
-                            duplicateFiles.add(fileInput);
-                        }
-
-                        while ((fileInput = reader.readLine()) != null) {
-                            duplicateFiles.add(fileInput);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace(); //TODO proper exception handling
-                    }
-
-
-                } catch (RemoteException e) {
-                    System.out.println("[-] " + server.toString() + "failed during list operation");
-                }
             }
+        }
+
+        //Find the emptiest server
+        numFiles = server.numFiles();
+
+        if (numFiles < minimum) {
+            minimum = numFiles;
+            emptiestServer = server;
         }
 
         if (emptiestServer == null) {
@@ -120,38 +101,110 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public String list() {
+    public void updateServers() {
+        ServerInterface server; //A single server
+        ServerInterface listOfServers[]; //An array of available servers
+        File fileList; //A text document containing the files a single server should have
+        File listOfFileLists[]; //An array containing the fileList of each server
+        ArrayList<String> correctFilesOnServer = new ArrayList<>(); //A list containing the files that should be on the server
+        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer = new ArrayList<>(); //An arraylist containing the list of files that should be on the server, for each server
+        ArrayList<String> actualFilesOnServer = new ArrayList<>(); //A list containing the files actually on the server
+        ArrayList<ArrayList<String>> listOfActualFilesOnServer = new ArrayList<>(); //An arraylist containing the list of files actually on the server, for each server
+        ArrayList<String> duplicateFiles = new ArrayList<>();
+        String line;
+        BufferedReader reader;
+
+        //Get the list of available servers, and their filelist text documents
+        listOfServers = checkStatus().getServers().toArray(new ServerInterface[0]);
+        listOfFileLists = checkStatus().getFileLists().toArray(new File[0]);
+
+        //Read in the duplicate files
+        try {
+            reader = new BufferedReader(new FileReader(duplicates));
+
+            while ((line = reader.readLine()) != null) {
+                duplicateFiles.add(line);
+            }
+        } catch (IOException e) {
+            //TODO
+        }
+
+        //Get the list of files for each server, add each list to a containing arraylist
+        for (int i = 0; i < listOfServers.length; i++) {
+            server = listOfServers[i];
+            fileList = listOfFileLists[i];
+
+            try {
+                reader = new BufferedReader(new FileReader(fileList));
+                while ((line = reader.readLine()) != null) {
+                    correctFilesOnServer.add(line);
+                }
+
+                listOfCorrectFilesOnServer.add(correctFilesOnServer);
+
+            } catch (IOException e) {
+                e.printStackTrace(); //TODO proper exception handling
+            }
+        }
+    }
+
+    public ArrayList<ArrayList<String>> list() {
+        ServerInterface listOfServers[];
+        ServerInterface server;
+        File listOfFileLists[];
+        File fileList;
+        String line;
+        BufferedReader reader;
+
         ArrayList<ServerInterface> servers;
-        StringBuilder listing = new StringBuilder();
+        ArrayList<String> filesOnServer = new ArrayList<>();
+        ArrayList<ArrayList<String>> listing = new ArrayList<>();
+
+        listOfServers = checkStatus().getServers().toArray(new ServerInterface[0]);
+        listOfFileLists = checkStatus().getFileLists().toArray(new File[0]);
+
         int counter = 0;
 
-        servers = checkStatus();
-
-        if (servers.size() == 0) {
-            return "0"; //No servers available TODO: handle this on client side
+        if (listOfServers.length == 0) {
+            // handle no servers available
         } else {
-            for (ServerInterface server : servers) {
+
+            //Update servers first
+            if (changedState = true) {
+                updateServers();
+            }
+
+            for (int i = 0; i < listOfServers.length; i++) {
+                fileList = listOfFileLists[i];
+
                 try {
-                    listing.append(server.list());
-                } catch (RemoteException e) {
-                    System.out.println("[-] " + server.toString() + "failed during list operation");
-                    counter++;
+                    reader = new BufferedReader(new FileReader(fileList));
+                    while ((line = reader.readLine()) != null) {
+                        filesOnServer.add(line);
+                    }
+
+                    listing.add(filesOnServer);
+
+                } catch (IOException e) {
+                    System.out.println("[-] Error when reading filelists");
+                    e.printStackTrace(); //TODO proper exception handling
                 }
             }
         }
 
-        if (counter == servers.size()) {
-            return "0"; //All servers went down during list operation
+        if (counter == listOfServers.length) {
+            return null; //All servers went down during list operation
         } else {
-            return listing.toString();
+            return listing;
         }
     }
 
-    public ArrayList<ServerInterface> checkStatus() {
+    public ServerList checkStatus() {
         ServerInterface allServers[] = {server1, server2, server3};
         File allFileLists[] = {fileList1, fileList2, fileList3};
-        ArrayList<ServerInterface> upServers = new ArrayList<>();
+        ArrayList<ServerInterface> previousUpServers = (ArrayList<ServerInterface>) upServers.clone(); //TODO check this
         ArrayList<File> upFileLists = new ArrayList<>();
+        ServerList availableServers;
 
         for (int i = 0; i < 3; i++) {
             try {
@@ -162,7 +215,13 @@ public class FrontEnd implements FrontEndInterface {
                 System.out.println("[-] " + server1.toString() + "not available");
             }
         }
-        return upServers;
+
+        if (!previousUpServers.equals(upServers)) {
+            changedState = true;
+        }
+
+        availableServers = new ServerList(upServers, upFileLists);
+        return availableServers;
     }
 }
 

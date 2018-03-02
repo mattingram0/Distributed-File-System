@@ -21,9 +21,9 @@ public class Server1 implements ServerInterface {
     }
 
     public ArrayList<String> list() throws RemoteException {
-        StringBuilder fileList = new StringBuilder();
         ArrayList<String> files = new ArrayList<>();
         ArrayList<String> directories = new ArrayList<>();
+        ArrayList<String> listing;
 
         File folder = new File(".");
         File[] listOfFiles = folder.listFiles();
@@ -37,7 +37,7 @@ public class Server1 implements ServerInterface {
             }
         }
 
-        ArrayList<String> listing = new ArrayList<>(directories);
+        listing = new ArrayList<>(directories);
         listing.addAll(files);
 
         return listing;

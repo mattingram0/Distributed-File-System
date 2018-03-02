@@ -9,4 +9,12 @@ public class ServerList {
         this.servers = servers;
         this.fileLists = fileLists;
     }
+
+    public ArrayList<File> getFileLists() {
+        return fileLists;
+    }
+
+    public ArrayList<ServerInterface> getServers() {
+        return servers;
+    }
 }
