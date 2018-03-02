@@ -12,6 +12,8 @@ public interface ServerInterface extends Remote {
 
     void ping() throws RemoteException;
 
+    void delete(String filename) throws RemoteException;
+
     int checkSpace() throws RemoteException;
 
     ArrayList<String> list() throws RemoteException;

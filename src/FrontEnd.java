@@ -103,20 +103,54 @@ public class FrontEnd implements FrontEndInterface {
 
     public void updateServers() {
         ServerInterface server; //A single server
-        ServerInterface listOfServers[]; //An array of available servers
-        File fileList; //A text document containing the files a single server should have
-        File listOfFileLists[]; //An array containing the fileList of each server
-        ArrayList<String> correctFilesOnServer = new ArrayList<>(); //A list containing the files that should be on the server
-        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer = new ArrayList<>(); //An arraylist containing the list of files that should be on the server, for each server
-        ArrayList<String> actualFilesOnServer = new ArrayList<>(); //A list containing the files actually on the server
-        ArrayList<ArrayList<String>> listOfActualFilesOnServer = new ArrayList<>(); //An arraylist containing the list of files actually on the server, for each server
+        ArrayList<ServerInterface> listOfServers = new ArrayList<>(); //An arraylist of available servers
+        ArrayList<File> listOfFileLists; //An arraylist containing the fileList of each server
+        ArrayList<String> correctFilesOnServer; //A list containing the files that should be on the server
+        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer; //An arraylist containing the list of files that should be on the server, for each server
+        ArrayList<String> actualFilesOnServer; //A list containing the files actually on the server
+        ArrayList<ArrayList<String>> listOfActualFilesOnServer; //An arraylist containing the list of files actually on the server, for each server
+        ArrayList<String> duplicateFiles; //An arraylist containing all files that should be on every server
+        ServerList availableServers = checkStatus();
+
+
+        listOfServers = availableServers.getServers();
+        listOfFileLists = availableServers.getFileLists();
+
+        listOfActualFilesOnServer = getActualFiles(listOfServers);
+        listOfCorrectFilesOnServer = getCorrectFiles(listOfFileLists);
+        duplicateFiles = getDuplicateFiles();
+
+        for (int i = 0; i < listOfActualFilesOnServer.size(); i++) {
+            actualFilesOnServer = listOfActualFilesOnServer.get(i);
+            correctFilesOnServer = listOfCorrectFilesOnServer.get(i);
+            server = listOfServers.get(i);
+
+            for (String file : actualFilesOnServer) {
+                if (!correctFilesOnServer.contains(file) && !duplicateFiles.contains(file)) {
+                    server.delete(file);
+                }
+            }
+        }
+    }
+
+    public ArrayList<ArrayList<String>> list() { //TODO: add duplicates?
+        ArrayList<ServerInterface> servers;
+        ArrayList<ArrayList<String>> listing;
+        servers = checkStatus().getServers();
+
+        //Update servers first if necessary
+        if (changedState = true) {
+            updateServers();
+        }
+
+        listing = getActualFiles(servers);
+        return listing;
+    }
+
+    private ArrayList<String> getDuplicateFiles() {
         ArrayList<String> duplicateFiles = new ArrayList<>();
         String line;
         BufferedReader reader;
-
-        //Get the list of available servers, and their filelist text documents
-        listOfServers = checkStatus().getServers().toArray(new ServerInterface[0]);
-        listOfFileLists = checkStatus().getFileLists().toArray(new File[0]);
 
         //Read in the duplicate files
         try {
@@ -129,53 +163,50 @@ public class FrontEnd implements FrontEndInterface {
             //TODO
         }
 
-        //Get the list of files for each server, add each list to a containing arraylist
-        for (int i = 0; i < listOfServers.length; i++) {
-            server = listOfServers[i];
-            fileList = listOfFileLists[i];
+        return duplicateFiles;
+    }
 
-            try {
-                reader = new BufferedReader(new FileReader(fileList));
-                while ((line = reader.readLine()) != null) {
-                    correctFilesOnServer.add(line);
+    public ArrayList<ArrayList<String>> getActualFiles(ArrayList<ServerInterface> servers) {
+
+        ArrayList<ArrayList<String>> listing = new ArrayList<>();
+        int counter = 0;
+
+        if (servers.size() == 0) {
+            return null; //No servers available TODO: handle this on client side
+        } else {
+            for (ServerInterface server : servers) {
+                try {
+                    listing.add(server.list());
+                } catch (RemoteException e) {
+                    System.out.println("[-] " + server.toString() + "failed during list operation");
+                    counter++;
                 }
-
-                listOfCorrectFilesOnServer.add(correctFilesOnServer);
-
-            } catch (IOException e) {
-                e.printStackTrace(); //TODO proper exception handling
             }
+        }
+
+        if (counter == servers.size()) {
+            return null; //All servers went down during list operation
+        } else {
+            return listing;
         }
     }
 
-    public ArrayList<ArrayList<String>> list() {
-        ServerInterface listOfServers[];
-        ServerInterface server;
-        File listOfFileLists[];
+    public ArrayList<ArrayList<String>> getCorrectFiles(ArrayList<File> listOfFileLists) { //TODO: add duplicates???
         File fileList;
         String line;
         BufferedReader reader;
 
-        ArrayList<ServerInterface> servers;
         ArrayList<String> filesOnServer = new ArrayList<>();
         ArrayList<ArrayList<String>> listing = new ArrayList<>();
 
-        listOfServers = checkStatus().getServers().toArray(new ServerInterface[0]);
-        listOfFileLists = checkStatus().getFileLists().toArray(new File[0]);
-
         int counter = 0;
 
-        if (listOfServers.length == 0) {
-            // handle no servers available
+        if (listOfFileLists.size() == 0) {
+            // TODO: handle no servers available, make sure calling functions properly handle
         } else {
 
-            //Update servers first
-            if (changedState = true) {
-                updateServers();
-            }
-
-            for (int i = 0; i < listOfServers.length; i++) {
-                fileList = listOfFileLists[i];
+            for (int i = 0; i < listOfFileLists.size(); i++) { //TODO: abstract this out into a new function, or make update servers return this??
+                fileList = listOfFileLists.get(i);
 
                 try {
                     reader = new BufferedReader(new FileReader(fileList));
@@ -187,12 +218,13 @@ public class FrontEnd implements FrontEndInterface {
 
                 } catch (IOException e) {
                     System.out.println("[-] Error when reading filelists");
+                    counter++;
                     e.printStackTrace(); //TODO proper exception handling
                 }
             }
         }
 
-        if (counter == listOfServers.length) {
+        if (counter == listOfFileLists.size()) {
             return null; //All servers went down during list operation
         } else {
             return listing;
@@ -200,7 +232,7 @@ public class FrontEnd implements FrontEndInterface {
     }
 
     public ServerList checkStatus() {
-        ServerInterface allServers[] = {server1, server2, server3};
+        ServerInterface allServers[] = {server1, server2, server3}; //All the logic in the program relies on the indexes being the same for these two arrays
         File allFileLists[] = {fileList1, fileList2, fileList3};
         ArrayList<ServerInterface> previousUpServers = (ArrayList<ServerInterface>) upServers.clone(); //TODO check this
         ArrayList<File> upFileLists = new ArrayList<>();

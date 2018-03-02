@@ -53,6 +53,9 @@ public class Server1 implements ServerInterface {
 
     ;
 
+    public void delete(String filename) throws RemoteException {
+    }
+
     public static void main(String args[]) {
 
         try {
