@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -396,15 +397,19 @@ public class Client {
     }
 
     public void list() {
-        String listing;
+        ArrayList<ArrayList<String>> listing;
 
         try {
             listing = frontEnd.list();
 
-            if (listing.equals("0")) {
+            if (listing == null) {
                 System.out.println("[-] Server error, unable to retrieve directory listing");
             } else {
-                System.out.println(listing);
+                for (ArrayList<String> list : listing) {
+                    for (String file : list) {
+                        System.out.println(file); //TODO: TEST
+                    }
+                }
             }
         } catch (RemoteException e) {
             System.out.println("[-] Server error: " + e.getMessage());

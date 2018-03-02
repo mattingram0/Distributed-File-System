@@ -142,10 +142,11 @@ public class FrontEnd implements FrontEndInterface {
 
     public ArrayList<ArrayList<String>> list() { //TODO: add duplicates?
         ServerList availableServers = checkStatus();
+        ArrayList<ArrayList<String>> listing;
         ArrayList<ServerInterface> servers = availableServers.getServers();
 
         if (servers.size() == 0) {
-            //TODO: handles no servers available
+            return null;
         }
 
         //Update servers first if necessary
@@ -153,7 +154,9 @@ public class FrontEnd implements FrontEndInterface {
             updateServers(availableServers);
         }
 
-        return getActualFiles(servers);
+        listing = getActualFiles(servers);
+        listing.add(getDuplicateFiles());
+        return listing;
 
     }
 
