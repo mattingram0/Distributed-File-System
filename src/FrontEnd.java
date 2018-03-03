@@ -1,4 +1,5 @@
 import java.io.*;
+import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
@@ -14,7 +15,7 @@ public class FrontEnd implements FrontEndInterface {
     ServerInterface server2;
     ServerInterface server3;
 
-    ArrayList<ServerInterface> upServers;
+    ArrayList<ServerInterface> upServers = new ArrayList<>();
     boolean changedState = false; //Set to true when a server fails or comes back, to recheck files
 
     File duplicates;
@@ -29,6 +30,7 @@ public class FrontEnd implements FrontEndInterface {
     public static void main(String args[]) {
 
         try {
+            System.setProperty("java.security.policy", "/Users/matt/IdeaProjects/Distributed-System-Assignment/out/production/Distributed-System-Assignment/server.policy");
             //Setup security manager
             if (System.getSecurityManager() == null) {
                 System.setSecurityManager(new SecurityManager());
@@ -36,9 +38,7 @@ public class FrontEnd implements FrontEndInterface {
 
             //Create front end, add it to registry to be used by clients
             FrontEnd frontEnd = new FrontEnd();
-            FrontEndInterface stub = (FrontEndInterface) UnicastRemoteObject.exportObject(frontEnd, 0);
             Registry registry = LocateRegistry.getRegistry("127.0.0.1", 38048);
-            registry.rebind("FrontEnd", stub);
 
             //Get the server stubs from the registry to be used by the master
             frontEnd.server1 = (ServerInterface) registry.lookup("Server1");
@@ -58,6 +58,9 @@ public class FrontEnd implements FrontEndInterface {
             if (!(frontEnd.fileList3 = new File("server3.txt")).exists()) {
                 frontEnd.fileList3.createNewFile();
             }
+
+            FrontEndInterface stub = (FrontEndInterface) UnicastRemoteObject.exportObject(frontEnd, 0);
+            registry.rebind("FrontEnd", stub);
 
             System.out.println("[+] Front End Server ready on port 38048");
         } catch (Exception e) {
@@ -79,7 +82,7 @@ public class FrontEnd implements FrontEndInterface {
         }
 
         //Update the necessary servers
-        if (changedState = true) {
+        if (changedState) {
             updateServers(availableServers);
         }
 
@@ -150,7 +153,7 @@ public class FrontEnd implements FrontEndInterface {
         }
 
         //Update servers first if necessary
-        if (changedState = true) {
+        if (changedState) {
             updateServers(availableServers);
         }
 
@@ -257,7 +260,7 @@ public class FrontEnd implements FrontEndInterface {
                 upServers.add(allServers[i]);
                 upFileLists.add(allFileLists[i]);
             } catch (RemoteException e) {
-                System.out.println("[-] " + server1.toString() + "not available");
+                System.out.println("[-] Server" + Integer.toString(i) + " not available");
             }
         }
 

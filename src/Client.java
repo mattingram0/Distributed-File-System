@@ -28,6 +28,8 @@ public class Client {
 
         //Prompt for operation - must be connect
 
+        System.setProperty("java.security.policy", "/Users/matt/IdeaProjects/Distributed-System-Assignment/out/production/Distributed-System-Assignment/client.policy");
+
         Client client;
         String command;
         Scanner scanner;
@@ -89,7 +91,6 @@ public class Client {
                     } else {
                         System.out.println("[-] Not connected to a server! Please use CONN to connect to a fileserver \n");
                     }
-
                     break;
 
 
@@ -434,6 +435,7 @@ public class Client {
 
         try {
             port = scanner.nextInt();
+            scanner.nextLine();
         } catch (IllegalStateException | InputMismatchException e) {
             throw new InputException("Unable to read port number");
         }
@@ -441,9 +443,10 @@ public class Client {
         try {
             registry = LocateRegistry.getRegistry(host, port);
             frontEnd = (FrontEndInterface) registry.lookup("FrontEnd");
+            System.out.println("[+] Successfully connected to " + host + " on port " + Integer.toString(port) + "\n");
+            connected = true;
         } catch (Exception e) {
-            System.out.println("[-] Unable to connect to front end server: " + e.toString());
-            e.printStackTrace();
+            throw new InputException("Unable to connect to front end server: " + e.toString());
         }
     }
 

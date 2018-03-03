@@ -11,7 +11,7 @@ import java.util.ArrayList;
 public class Server1 implements ServerInterface {
 
     public int numFiles() {
-        return 0;
+        return 10;
     }
 
     public void ping() throws RemoteException {
@@ -66,10 +66,14 @@ public class Server1 implements ServerInterface {
     public static void main(String args[]) {
 
         try {
+            //Set policy file
+            System.setProperty("java.security.policy", "/Users/matt/IdeaProjects/Distributed-System-Assignment/out/production/Distributed-System-Assignment/server.policy");
+
             //Setup security manager
             if (System.getSecurityManager() == null) {
                 System.setSecurityManager(new SecurityManager());
             }
+
 
             //Create front end, add it to registry to be used by clients
             Server1 server1 = new Server1();

@@ -50,6 +50,9 @@ public class Server3 implements ServerInterface {
     public static void main(String args[]) {
 
         try {
+            //Setup policy
+            System.setProperty("java.security.policy", "/Users/matt/IdeaProjects/Distributed-System-Assignment/out/production/Distributed-System-Assignment/server.policy");
+
             //Setup security manager
             if (System.getSecurityManager() == null) {
                 System.setSecurityManager(new SecurityManager());
