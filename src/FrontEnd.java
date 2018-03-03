@@ -40,11 +40,6 @@ public class FrontEnd implements FrontEndInterface {
             FrontEnd frontEnd = new FrontEnd();
             Registry registry = LocateRegistry.getRegistry("127.0.0.1", 38048);
 
-            //Get the server stubs from the registry to be used by the master
-            frontEnd.server1 = (ServerInterface) registry.lookup("Server1");
-            frontEnd.server2 = (ServerInterface) registry.lookup("Server2");
-            frontEnd.server3 = (ServerInterface) registry.lookup("Server3");
-
             //Create text documents holding the files that should exist on each server, and a separate doc for duplicates
             if (!(frontEnd.duplicates = new File("duplicates.txt")).exists()) {
                 frontEnd.duplicates.createNewFile();
@@ -147,7 +142,6 @@ public class FrontEnd implements FrontEndInterface {
         ServerList availableServers = checkStatus();
         ArrayList<ArrayList<String>> listing;
         ArrayList<ServerInterface> servers = availableServers.getServers();
-
         if (servers.size() == 0) {
             return null;
         }
@@ -156,7 +150,6 @@ public class FrontEnd implements FrontEndInterface {
         if (changedState) {
             updateServers(availableServers);
         }
-
         listing = getActualFiles(servers);
         listing.add(getDuplicateFiles());
         return listing;
@@ -248,19 +241,61 @@ public class FrontEnd implements FrontEndInterface {
     }
 
     public ServerList checkStatus() {
-        ServerInterface allServers[] = {server1, server2, server3}; //All the logic in the program relies on the indexes being the same for these two arrays
-        File allFileLists[] = {fileList1, fileList2, fileList3};
+
+        ArrayList<ServerInterface> stubs = new ArrayList<>();
+        ArrayList<File> fileLists = new ArrayList<>();
         ArrayList<ServerInterface> previousUpServers = (ArrayList<ServerInterface>) upServers.clone(); //TODO check this
         ArrayList<File> upFileLists = new ArrayList<>();
         ServerList availableServers;
+        Registry registry;
 
-        for (int i = 0; i < 3; i++) {
+        //Get registry
+        try {
+            registry = LocateRegistry.getRegistry("127.0.0.1", 38048);
+        } catch (RemoteException e) {
+            System.out.println("[-] Front end unable to access registry");
+            return null; //TODO handle
+        }
+
+        //Get updated stubs, in case a server has come back online and rebound there stub to the registry
+        try {
+            server1 = (ServerInterface) registry.lookup("Server1");
+            stubs.add(server1);
+            fileLists.add(fileList1);
+        } catch (RemoteException | NotBoundException e) {
+            e.printStackTrace(); //TODO fix these
+        }
+
+        try {
+            server2 = (ServerInterface) registry.lookup("Server2");
+            stubs.add(server2);
+            fileLists.add(fileList2);
+        } catch (RemoteException | NotBoundException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            server3 = (ServerInterface) registry.lookup("Server3");
+            stubs.add(server3);
+            fileLists.add(fileList3);
+        } catch (RemoteException | NotBoundException e) {
+            e.printStackTrace();
+        }
+
+        if (stubs.size() == 0) {
+            System.out.println("[-] No server stubs registered in registry");
+            return null; //TODO handle
+        }
+
+        //Check servers haven't gone down by pinging them (stubs might be registered but server may be down
+        for (int i = 0; i < stubs.size(); i++) {
             try {
-                allServers[i].ping();
-                upServers.add(allServers[i]);
-                upFileLists.add(allFileLists[i]);
+                stubs.get(i).ping();
+                upServers.add(stubs.get(i));
+                upFileLists.add(fileLists.get(i));
+
             } catch (RemoteException e) {
-                System.out.println("[-] Server" + Integer.toString(i) + " not available");
+                System.out.println("[-] Server" + Integer.toString(i + 1) + " not available");
             }
         }
 
