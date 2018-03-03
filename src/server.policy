@@ -1,6 +1,8 @@
 grant {
 	permission java.net.SocketPermission "127.0.0.1:*", "connect,resolve";
 	permission java.net.SocketPermission "127.0.0.1:*", "accept";
+	permission java.io.FilePermission "/Users/matt/IdeaProjects/Distributed-System-Assignment", "write";
+	permission java.io.FilePermission "/Users/matt/IdeaProjects/Distributed-System-Assignment", "read";
 	permission java.io.FilePermission "/Users/matt/IdeaProjects/Distributed-System-Assignment/-", "write";
 	permission java.io.FilePermission "/Users/matt/IdeaProjects/Distributed-System-Assignment/-", "read";
 };
