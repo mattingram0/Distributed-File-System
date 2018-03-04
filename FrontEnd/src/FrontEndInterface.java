@@ -6,6 +6,8 @@ import java.util.ArrayList;
 public interface FrontEndInterface extends Remote {
     ArrayList<ArrayList<String>> list() throws RemoteException;
 
-    boolean upload(int port, boolean reliable) throws RemoteException;
+    boolean upload(int port, String filename, boolean reliable) throws RemoteException;
+
+    void push() throws RemoteException;
 
 }

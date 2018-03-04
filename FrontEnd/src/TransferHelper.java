@@ -1,4 +1,4 @@
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -6,31 +6,39 @@ public class TransferHelper implements Runnable {
     int port;
     boolean type;
     boolean reliable;
+    boolean exists;
     ServerSocket listener;
     Socket socket;
+    private DataInputStream dis;
+    private DataOutputStream dos;
+    private BufferedInputStream bis;
 
     //Used for uploading files
-    TransferHelper(int port, boolean type, boolean reliable) {
+    TransferHelper(int port, boolean type, boolean exists, boolean reliable) {
         this.port = port;
         this.type = type; //True for upload, false for download
+        this.exists = exists;
         this.reliable = reliable;
     }
 
     //Used for downloading files
-    TransferHelper(int port, boolean type) {
+    TransferHelper(int port, boolean exists, boolean type) {
         this.port = port;
+        this.exists = exists;
         this.type = type; //True for upload, false for download
     }
 
     public void run() {
-
-        System.setProperty("java.security.policy", "server.policy");
+        System.setProperty("java.security.policy", "server.policy"); //TODO test if required
 
         try {
             listener = new ServerSocket(port);
 
             while (true) {
                 socket = listener.accept();
+                dis = new DataInputStream(socket.getInputStream());
+                dos = new DataOutputStream(socket.getOutputStream());
+                bis = new BufferedInputStream(socket.getInputStream());
                 break;
             }
 
@@ -46,7 +54,68 @@ public class TransferHelper implements Runnable {
     }
 
     public void upload() {
+        int filenameLength;
+        int filesize;
+        int readBytes;
+        int totalBytes = 0;
+        byte[] buffer = new byte[1024];
+        StringBuilder filename = new StringBuilder();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        FileOutputStream fileOutputStream;
+        File outputFile;
 
+        try {
+            filenameLength = dis.readInt();
+
+            for (int i = 0; i < filenameLength; i++) {
+                filename.append(dis.readChar());
+            }
+
+            filesize = dis.readInt();
+
+            //Send ready to receive bytes
+            dos.writeInt(0);
+        } catch (IOException e) {
+            System.out.println("[-] Unable to read filename or filesize");
+            return;
+        }
+
+        try {
+            //Receive and read bytes
+            while (totalBytes < filesize) {
+                readBytes = bis.read(buffer);
+                outputStream.write(buffer, 0, readBytes);
+                totalBytes += readBytes;
+            }
+
+            //Send number of bytes received
+            buffer = outputStream.toByteArray();
+            dos.writeInt(buffer.length);
+        } catch (IOException e) {
+            System.out.println("[-] Unable to read file ");
+        }
+
+        //Write buffer to file
+        if (buffer.length == filesize) {
+            try {
+
+                //Check if user wants to overwrite
+                if (exists) {
+                    dos.writeInt(-1);
+                } else {
+                    dos.writeInt(0);
+                }
+
+                outputFile = new File("files/" + filename.toString());
+                outputFile.createNewFile();
+                fileOutputStream = new FileOutputStream(outputFile);
+                fileOutputStream.write(buffer);
+            } catch (IOException e) {
+                System.out.println("[-] Unable to save file");
+            }
+        } else {
+            System.out.println("[-] Incorrect number of bytes received, file not saved");
+        }
     }
 
     public void download() {

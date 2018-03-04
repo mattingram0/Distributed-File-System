@@ -312,7 +312,7 @@ public class Client {
         //Calls the remote upload function, which tells the front end to open a remote connection
         //This step ensures the front ends listener socket is open before we try connect to it
         try {
-            if (!frontEnd.upload(9090, reliable)) {
+            if (!frontEnd.upload(9090, filename, reliable)) {
                 System.out.println("[-] No upload servers available, ");
             }
         } catch (RemoteException e) {
@@ -415,6 +415,9 @@ public class Client {
                 }
 
                 System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
+
+                //If the upload to the front end was successful, push the uploads to the other servers.
+                frontEnd.push();
             } else {
                 System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
             }

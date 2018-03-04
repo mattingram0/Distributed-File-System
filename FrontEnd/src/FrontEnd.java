@@ -66,12 +66,20 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public boolean upload(int port, boolean reliable) {
+    public boolean upload(int port, String filename, boolean reliable) {
         ServerInterface emptiestServer = null;
-        ServerList availableServers = checkStatus();
-        ArrayList<ServerInterface> listOfServers = availableServers.getServers();
+        ServerList availableServers;
+        ArrayList<ServerInterface> listOfServers;
+        ArrayList<File> listOfFileLists;
+        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer;
+        boolean exists = false;
         int numFiles;
         int minimum = Integer.MAX_VALUE;
+
+        availableServers = checkStatus();
+        listOfServers = availableServers.getServers();
+        listOfFileLists = availableServers.getFileLists();
+        listOfCorrectFilesOnServer = getCorrectFiles(listOfFileLists);
 
         //Ensure there are servers available
         if (listOfServers.size() == 0) {
@@ -97,18 +105,29 @@ public class FrontEnd implements FrontEndInterface {
             }
         }
 
+        //Check to see if filename exists on any of the servers:
+        for (ArrayList<String> filesOnServer : listOfCorrectFilesOnServer) {
+            if (filesOnServer.contains(filename)) {
+                exists = true;
+            }
+        }
+
         if (emptiestServer == null) {
             // handle all servers failed to respond to list operation
             return false;
         } else {
             //start a thread to handle the upload
             TransferHelper helper;
-            helper = new TransferHelper(port, true, reliable);
+            helper = new TransferHelper(port, true, exists, reliable);
             Thread thread = new Thread(helper);
             thread.start();
         }
 
         return true;
+    }
+
+    public void push() {
+
     }
 
     public void updateServers(ServerList availableServers) {
@@ -269,7 +288,7 @@ public class FrontEnd implements FrontEndInterface {
             return null; //TODO handle
         }
 
-        //Get updated stubs, in case a server has come back online and rebound there stub to the registry
+        //Get updated stubs, in case a server has come back online and rebound their stub to the registry
         try {
             server1 = (ServerInterface) registry.lookup("Server1");
             stubs.add(server1);
