@@ -2,7 +2,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class UploadHelper implements Runnable {
+public class TransferHelper implements Runnable {
     int port;
     boolean type;
     boolean reliable;
@@ -10,19 +10,22 @@ public class UploadHelper implements Runnable {
     Socket socket;
 
     //Used for uploading files
-    UploadHelper(int port, boolean type, boolean reliable) {
+    TransferHelper(int port, boolean type, boolean reliable) {
         this.port = port;
         this.type = type; //True for upload, false for download
         this.reliable = reliable;
     }
 
     //Used for downloading files
-    UploadHelper(int port, boolean type) {
+    TransferHelper(int port, boolean type) {
         this.port = port;
         this.type = type; //True for upload, false for download
     }
 
     public void run() {
+
+        System.setProperty("java.security.policy", "server.policy");
+
         try {
             listener = new ServerSocket(port);
 
@@ -43,7 +46,7 @@ public class UploadHelper implements Runnable {
     }
 
     public void upload() {
-        System.out.println("[+] Upload successful");
+
     }
 
     public void download() {

@@ -102,8 +102,8 @@ public class FrontEnd implements FrontEndInterface {
             return false;
         } else {
             //start a thread to handle the upload
-            UploadHelper helper;
-            helper = new UploadHelper(port, true, reliable);
+            TransferHelper helper;
+            helper = new TransferHelper(port, true, reliable);
             Thread thread = new Thread(helper);
             thread.start();
         }

@@ -30,8 +30,6 @@ public class Client {
 
         //Prompt for operation - must be connect
 
-        System.setProperty("java.security.policy", "client.policy");
-
         Client client;
         String command;
         Scanner scanner;
@@ -287,7 +285,6 @@ public class Client {
 
         //Get filename
         try {
-            dos.writeChars("UPLD");
             System.out.println("[*] Please enter filename to upload");
             System.out.print("> ");
             filename = scanner.nextLine();
@@ -335,98 +332,98 @@ public class Client {
 
         }
 
-//        try {
-//
-//            //Send filename length and filename
-//            dos.writeInt(uploadFile.getName().length());
-//            dos.writeChars(uploadFile.getName());
-//
-//            buffer = new byte[1024];
-//
-//            //Read file into bytes buffer
-//            while ((readBytes = bfis.read(buffer)) > 0) {
-//                byteOutputStream.write(buffer, 0, readBytes);
-//            }
-//        } catch (IOException e) {
-//            System.out.println("[-] Unable to read file ");
-//            return;
-//        }
-//
-//        try {
-//            //Send file length
-//            buffer = byteOutputStream.toByteArray();
-//            dos.writeInt(buffer.length);
-//
-//            status = dis.readInt(); //TODO BISBOS
-//            if (status == -1) {
-//                throw new IOException();
-//            }
-//        } catch (IOException e) {
-//            System.out.println("[-] No okay received from server");
-//        }
-//
-//        //Send file over stream, in chunks 100 of the total length
-//        int chunkLength = buffer.length / 100;
-//        int difference = buffer.length - (chunkLength * 100);
-//        startTime = System.nanoTime();
-//
-//        try {
-//            if (buffer.length > 100) { //If file over 100 bytes, use progress bar
-//                for (int i = 0; i < 100; i++) {
-//                    bos.write(buffer, i * chunkLength, chunkLength);
-//
-//                    if (i == 0) {
-//                        progressBar = "[                                                                                                    ]" + "0%\r";
-//                    } else {
-//                        progressBar = "[" + String.format("%0" + i + "d" + "%" + (100 - i) + "s", 0, "").replace("0", "=") + "]" + Integer.toString(i) + "%\r";
-//                    }
-//
-//                    System.out.print(progressBar);
-//                }
-//
-//                bos.write(buffer, 100 * chunkLength, difference);
-//                bos.flush(); //CRITICAL TO SEND THE LAST 21 bytes
-//                progressBar = "[==================================================================================================]" + "100%\r";
-//                System.out.println(progressBar);
-//
-//            } else {
-//                //File too small to use the progress bar
-//                bos.write(buffer);
-//                bos.flush();
-//            }
-//
-//            ///Users/matt/Documents/Durham/2nd Year/Networks and Systems/Assignment/client/test.jpg
-//        } catch (IOException e) {
-//            throw new TransferException("Error whilst sending file");
-//        }
-//
-//        try {
-//            bytesReceived = dis.readInt(); //TODO BISBOS
-//            endTime = System.nanoTime();
-//            uploadTime = (endTime - startTime) / 1000000;
-//
-//            if (bytesReceived == buffer.length) {
-//                if (dis.readInt() == -1) {
-//                    System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
-//                    System.out.print("> ");
-//
-//
-//                    if (!yesNo(scanner)) {
-//                        System.out.println("");
-//                        return;
-//                    }
-//                }
-//
-//                System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
-//            } else {
-//                System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
-//            }
-//        } catch (IOException e) {
-//            System.out.println(e.getMessage());
-//            System.out.println("[-] Unable to read number of bytes received");
-//        }
-//
-//        System.out.println("");
+        try {
+
+            //Send filename length and filename
+            dos.writeInt(uploadFile.getName().length());
+            dos.writeChars(uploadFile.getName());
+
+            buffer = new byte[1024];
+
+            //Read file into bytes buffer
+            while ((readBytes = bfis.read(buffer)) > 0) {
+                byteOutputStream.write(buffer, 0, readBytes);
+            }
+        } catch (IOException e) {
+            System.out.println("[-] Unable to read file ");
+            return;
+        }
+
+        try {
+            //Send file length
+            buffer = byteOutputStream.toByteArray();
+            dos.writeInt(buffer.length);
+
+            status = dis.readInt(); //TODO BISBOS
+            if (status == -1) {
+                throw new IOException();
+            }
+        } catch (IOException e) {
+            System.out.println("[-] No okay received from server");
+        }
+
+        //Send file over stream, in chunks 100 of the total length
+        int chunkLength = buffer.length / 100;
+        int difference = buffer.length - (chunkLength * 100);
+        startTime = System.nanoTime();
+
+        try {
+            if (buffer.length > 100) { //If file over 100 bytes, use progress bar
+                for (int i = 0; i < 100; i++) {
+                    bos.write(buffer, i * chunkLength, chunkLength);
+
+                    if (i == 0) {
+                        progressBar = "[                                                                                                    ]" + "0%\r";
+                    } else {
+                        progressBar = "[" + String.format("%0" + i + "d" + "%" + (100 - i) + "s", 0, "").replace("0", "=") + "]" + Integer.toString(i) + "%\r";
+                    }
+
+                    System.out.print(progressBar);
+                }
+
+                bos.write(buffer, 100 * chunkLength, difference);
+                bos.flush(); //CRITICAL TO SEND THE LAST 21 bytes
+                progressBar = "[==================================================================================================]" + "100%\r";
+                System.out.println(progressBar);
+
+            } else {
+                //File too small to use the progress bar
+                bos.write(buffer);
+                bos.flush();
+            }
+
+            ///Users/matt/Documents/Durham/2nd Year/Networks and Systems/Assignment/client/test.jpg
+        } catch (IOException e) {
+            throw new TransferException("Error whilst sending file");
+        }
+
+        try {
+            bytesReceived = dis.readInt(); //TODO BISBOS
+            endTime = System.nanoTime();
+            uploadTime = (endTime - startTime) / 1000000;
+
+            if (bytesReceived == buffer.length) {
+                if (dis.readInt() == -1) {
+                    System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
+                    System.out.print("> ");
+
+
+                    if (!yesNo(scanner)) {
+                        System.out.println("");
+                        return;
+                    }
+                }
+
+                System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
+            } else {
+                System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            System.out.println("[-] Unable to read number of bytes received");
+        }
+
+        System.out.println("");
     }
 
     public void list() {

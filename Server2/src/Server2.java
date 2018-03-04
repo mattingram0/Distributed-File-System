@@ -48,8 +48,6 @@ public class Server2 implements ServerInterface {
     public static void main(String args[]) {
 
         try {
-            //Setup policy
-            System.setProperty("java.security.policy", "server.policy");
 
             //Setup security manager
             if (System.getSecurityManager() == null) {

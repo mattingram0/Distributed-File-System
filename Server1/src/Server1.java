@@ -49,8 +49,6 @@ public class Server1 implements ServerInterface {
     public static void main(String args[]) {
 
         try {
-            //Set policy file
-            System.setProperty("java.security.policy", "server.policy");
 
             //Setup security manager
             if (System.getSecurityManager() == null) {
