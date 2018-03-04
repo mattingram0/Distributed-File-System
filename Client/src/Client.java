@@ -28,7 +28,7 @@ public class Client {
 
         //Prompt for operation - must be connect
 
-        System.setProperty("java.security.policy", "/Users/matt/IdeaProjects/Distributed-System-Assignment/out/production/Distributed-System-Assignment/client.policy");
+        System.setProperty("java.security.policy", "client.policy");
 
         Client client;
         String command;

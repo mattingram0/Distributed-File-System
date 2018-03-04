@@ -30,7 +30,7 @@ public class FrontEnd implements FrontEndInterface {
     public static void main(String args[]) {
 
         try {
-            System.setProperty("java.security.policy", "/Users/matt/IdeaProjects/Distributed-System-Assignment/out/production/Distributed-System-Assignment/server.policy");
+            System.setProperty("java.security.policy", "server.policy");
             //Setup security manager
             if (System.getSecurityManager() == null) {
                 System.setSecurityManager(new SecurityManager());
@@ -119,7 +119,11 @@ public class FrontEnd implements FrontEndInterface {
         listOfCorrectFilesOnServer = getCorrectFiles(listOfFileLists);
         duplicateFiles = getDuplicateFiles();
 
+        System.out.println(listOfActualFilesOnServer);
+        System.out.println(listOfCorrectFilesOnServer);
+
         for (int i = 0; i < listOfActualFilesOnServer.size(); i++) {
+            System.out.println(i);
             actualFilesOnServer = listOfActualFilesOnServer.get(i);
             correctFilesOnServer = listOfCorrectFilesOnServer.get(i);
             server = listOfServers.get(i);
@@ -127,6 +131,7 @@ public class FrontEnd implements FrontEndInterface {
             for (String file : actualFilesOnServer) {
                 if (!correctFilesOnServer.contains(file) && !duplicateFiles.contains(file)) {
                     try {
+                        System.out.println("exec");
                         server.delete(file);
                     } catch (RemoteException e) {
                         e.printStackTrace();
@@ -214,7 +219,7 @@ public class FrontEnd implements FrontEndInterface {
             // TODO: handle no servers available, make sure calling functions properly handle
         } else {
 
-            for (int i = 0; i < listOfFileLists.size(); i++) { //TODO: abstract this out into a new function, or make update servers return this??
+            for (int i = 0; i < listOfFileLists.size(); i++) {
                 fileList = listOfFileLists.get(i);
 
                 try {
@@ -288,6 +293,7 @@ public class FrontEnd implements FrontEndInterface {
         }
 
         //Check servers haven't gone down by pinging them (stubs might be registered but server may be down
+        upServers = new ArrayList<>();
         for (int i = 0; i < stubs.size(); i++) {
             try {
                 stubs.get(i).ping();
@@ -308,4 +314,4 @@ public class FrontEnd implements FrontEndInterface {
     }
 }
 
-/* We either monitor using periodic UDP calls, if one fails we set a flag not to use it, keep sending out calls to it though when we get a succesful call.*/
+/* We either monitor using periodic UDP calls, if one fails we set a flag not to use it, keep sending out calls to it though when we get a successful call.*/

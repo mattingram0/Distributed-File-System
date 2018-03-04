@@ -11,7 +11,7 @@ import java.util.ArrayList;
 public class Server1 implements ServerInterface {
 
     public int numFiles() {
-        return 10;
+        return 0;
     }
 
     public void ping() throws RemoteException {
@@ -26,7 +26,7 @@ public class Server1 implements ServerInterface {
         ArrayList<String> directories = new ArrayList<>();
         ArrayList<String> listing;
 
-        File folder = new File(".");
+        File folder = new File("files/");
         File[] listOfFiles = folder.listFiles();
 
         for (File file : listOfFiles) {
@@ -55,11 +55,10 @@ public class Server1 implements ServerInterface {
     ;
 
     public void delete(String filename) throws RemoteException {
-        try {
-            Files.delete(new File(filename).toPath()); //TODO: test this
-        } catch (IOException e) {
+        if (new File("files/" + filename).delete()) {
+            System.out.println("[+] File deleted successfully from Server1");
+        } else {
             System.out.println("[-] Unable to delete file from Server1");
-            e.printStackTrace();
         }
     }
 
@@ -67,7 +66,7 @@ public class Server1 implements ServerInterface {
 
         try {
             //Set policy file
-            System.setProperty("java.security.policy", "/Users/matt/IdeaProjects/Distributed-System-Assignment/out/production/Distributed-System-Assignment/server.policy");
+            System.setProperty("java.security.policy", "server.policy");
 
             //Setup security manager
             if (System.getSecurityManager() == null) {

@@ -51,7 +51,7 @@ public class Server2 implements ServerInterface {
 
         try {
             //Setup policy
-            System.setProperty("java.security.policy", "/Users/matt/IdeaProjects/Distributed-System-Assignment/out/production/Distributed-System-Assignment/server.policy");
+            System.setProperty("java.security.policy", "server.policy");
 
             //Setup security manager
             if (System.getSecurityManager() == null) {
