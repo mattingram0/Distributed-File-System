@@ -21,25 +21,13 @@ public class Server1 implements ServerInterface {
         return 0;
     }
 
-    public ArrayList<String> list() throws RemoteException {
-        ArrayList<String> files = new ArrayList<>();
-        ArrayList<String> directories = new ArrayList<>();
-        ArrayList<String> listing;
-
-        File folder = new File("files/");
-        File[] listOfFiles = folder.listFiles();
+    public ArrayList<String> list() {
+        ArrayList<String> listing = new ArrayList<>();
+        File[] listOfFiles = new File("files/").listFiles();
 
         for (File file : listOfFiles) {
-            if (file.isFile()) {
-                files.add(file.getName());
-            }
-            if (file.isDirectory()) {
-                directories.add("[D] " + file.getName());
-            }
+            listing.add(file.getName());
         }
-
-        listing = new ArrayList<>(directories);
-        listing.addAll(files);
 
         return listing;
     }
@@ -47,12 +35,8 @@ public class Server1 implements ServerInterface {
     public void download() throws RemoteException {
     }
 
-    ;
-
     public void upload() throws RemoteException {
     }
-
-    ;
 
     public void delete(String filename) throws RemoteException {
         if (new File("files/" + filename).delete()) {

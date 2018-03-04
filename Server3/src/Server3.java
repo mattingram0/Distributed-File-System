@@ -20,30 +20,29 @@ public class Server3 implements ServerInterface {
         return 0;
     }
 
-    ;
+    public ArrayList<String> list() {
+        ArrayList<String> listing = new ArrayList<>();
+        File[] listOfFiles = new File("files/").listFiles();
 
-    public ArrayList<String> list() throws RemoteException {
-        return new ArrayList<String>();
+        for (File file : listOfFiles) {
+            listing.add(file.getName());
+        }
+
+        return listing;
     }
-
-    ;
 
     public void download() throws RemoteException {
     }
 
-    ;
-
     public void upload() throws RemoteException {
     }
 
-    ;
 
     public void delete(String filename) throws RemoteException {
-        try {
-            Files.delete(new File(filename).toPath()); //TODO: test this
-        } catch (IOException e) {
+        if (new File("files/" + filename).delete()) {
+            System.out.println("[+] File deleted successfully from Server2");
+        } else {
             System.out.println("[-] Unable to delete file from Server2");
-            e.printStackTrace();
         }
     }
 
