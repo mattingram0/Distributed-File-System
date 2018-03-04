@@ -119,11 +119,7 @@ public class FrontEnd implements FrontEndInterface {
         listOfCorrectFilesOnServer = getCorrectFiles(listOfFileLists);
         duplicateFiles = getDuplicateFiles();
 
-        System.out.println(listOfActualFilesOnServer);
-        System.out.println(listOfCorrectFilesOnServer);
-
         for (int i = 0; i < listOfActualFilesOnServer.size(); i++) {
-            System.out.println(i);
             actualFilesOnServer = listOfActualFilesOnServer.get(i);
             correctFilesOnServer = listOfCorrectFilesOnServer.get(i);
             server = listOfServers.get(i);

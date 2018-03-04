@@ -281,6 +281,7 @@ public class Client {
         float startTime;
         float endTime;
         float uploadTime;
+        boolean important;
 
         //Get filename
         try {
@@ -304,7 +305,18 @@ public class Client {
             return;
         }
 
+        //Check if file needs to be stored reliably
+        System.out.println("[*] Backup file across multiple servers? (y/n)");
+        System.out.print("> ");
+        important = yesNo(scanner);
+
         try {
+            if (important) { //TODO add to server side
+                dos.writeInt(1);
+            } else {
+                dos.writeInt(0);
+            }
+
             //Send filename length and filename
             dos.writeInt(uploadFile.getName().length());
             dos.writeChars(uploadFile.getName());
@@ -441,10 +453,22 @@ public class Client {
         }
 
         try {
+            //Connect to the registry
             registry = LocateRegistry.getRegistry(host, port);
             frontEnd = (FrontEndInterface) registry.lookup("FrontEnd");
+
+            //Create the socket connection to handle the file transfer (only)
+            this.socket = new Socket(host, port);
+
+            //Create the input and output streams for file transfer
+            dis = new DataInputStream(socket.getInputStream());
+            dos = new DataOutputStream(socket.getOutputStream());
+            bis = new BufferedInputStream(socket.getInputStream());
+            bos = new BufferedOutputStream(socket.getOutputStream());
+
             System.out.println("[+] Successfully connected to " + host + " on port " + Integer.toString(port) + "\n");
             connected = true;
+
         } catch (Exception e) {
             throw new InputException("Unable to connect to front end server: " + e.toString());
         }
@@ -467,5 +491,6 @@ public class Client {
     }
 
     protected void finalize() {
+
     }
 }
