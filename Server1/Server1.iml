@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <output url="file://$MODULE_DIR$/../out/production/Server1" />
+    <output url="file://$USER_HOME$/Documents/Durham/2nd Year/Networks and Systems/Distributed Systems/Assignment/out/Server1" />
     <output-test url="file://$MODULE_DIR$/../out/test/Server1" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
@@ -9,6 +9,5 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="Distributed-System-Assignment" />
   </component>
 </module>
