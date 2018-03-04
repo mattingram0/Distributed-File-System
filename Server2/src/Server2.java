@@ -39,9 +39,9 @@ public class Server2 implements ServerInterface {
 
     public void delete(String filename) throws RemoteException {
         if (new File("files/" + filename).delete()) {
-            System.out.println("[+] File deleted successfully from Server2");
+            System.out.println("[+] " + filename + " deleted successfully from Server2");
         } else {
-            System.out.println("[-] Unable to delete file from Server2");
+            System.out.println("[-] Unable to delete " + filename + " file from Server2");
         }
     }
 

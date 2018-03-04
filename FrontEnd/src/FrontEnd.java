@@ -103,14 +103,14 @@ public class FrontEnd implements FrontEndInterface {
     }
 
     public void updateServers(ServerList availableServers) {
-        ServerInterface server; //A single server
-        ArrayList<ServerInterface> listOfServers = new ArrayList<>(); //An arraylist of available servers
-        ArrayList<File> listOfFileLists; //An arraylist containing the fileList of each server
-        ArrayList<String> correctFilesOnServer; //A list containing the files that should be on the server
-        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer; //An arraylist containing the list of files that should be on the server, for each server
-        ArrayList<String> actualFilesOnServer; //A list containing the files actually on the server
-        ArrayList<ArrayList<String>> listOfActualFilesOnServer; //An arraylist containing the list of files actually on the server, for each server
-        ArrayList<String> duplicateFiles; //An arraylist containing all files that should be on every server
+        ServerInterface server;                                     //A single server
+        ArrayList<ServerInterface> listOfServers;                   //An arraylist of available servers
+        ArrayList<File> listOfFileLists;                            //An arraylist containing the fileList of each server
+        ArrayList<String> correctFilesOnServer;                     //A list containing the files that should be on the server
+        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer;    //An arraylist containing the list of files that should be on the server, for each server
+        ArrayList<String> actualFilesOnServer;                      //A list containing the files actually on the server
+        ArrayList<ArrayList<String>> listOfActualFilesOnServer;     //An arraylist containing the list of files actually on the server, for each server
+        ArrayList<String> duplicateFiles;                           //An arraylist containing all files that should be on every server
 
         listOfServers = availableServers.getServers();
         listOfFileLists = availableServers.getFileLists();
@@ -131,7 +131,6 @@ public class FrontEnd implements FrontEndInterface {
             for (String file : actualFilesOnServer) {
                 if (!correctFilesOnServer.contains(file) && !duplicateFiles.contains(file)) {
                     try {
-                        System.out.println("exec");
                         server.delete(file);
                     } catch (RemoteException e) {
                         e.printStackTrace();
@@ -206,6 +205,7 @@ public class FrontEnd implements FrontEndInterface {
     }
 
     public ArrayList<ArrayList<String>> getCorrectFiles(ArrayList<File> listOfFileLists) { //TODO: add duplicates???
+        System.out.println(listOfFileLists);
         File fileList;
         String line;
         BufferedReader reader;
@@ -235,6 +235,8 @@ public class FrontEnd implements FrontEndInterface {
                     counter++;
                     e.printStackTrace(); //TODO proper exception handling
                 }
+
+                filesOnServer = new ArrayList<>();
             }
         }
 
