@@ -5,7 +5,6 @@ import java.net.Socket;
 public class TransferHelper implements Runnable {
     int port;
     boolean type;
-    boolean reliable;
     boolean exists;
     ServerSocket listener;
     Socket socket;
@@ -13,20 +12,21 @@ public class TransferHelper implements Runnable {
     private DataOutputStream dos;
     private BufferedInputStream bis;
 
-    //Used for uploading files
-    TransferHelper(int port, boolean type, boolean exists, boolean reliable) {
+    //Client -> FrontEnd
+    TransferHelper(int port, boolean type, boolean exists) {
         this.port = port;
         this.type = type; //True for upload, false for download
         this.exists = exists;
-        this.reliable = reliable;
     }
 
-    //Used for downloading files
-    TransferHelper(int port, boolean exists, boolean type) {
+    //FrontEnd -> Client
+    TransferHelper(int port, boolean type) {
         this.port = port;
-        this.exists = exists;
         this.type = type; //True for upload, false for download
     }
+
+    //FrontEnd -> Server
+
 
     public void run() {
         System.setProperty("java.security.policy", "server.policy"); //TODO test if required

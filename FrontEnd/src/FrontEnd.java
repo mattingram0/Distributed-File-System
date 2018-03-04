@@ -118,7 +118,7 @@ public class FrontEnd implements FrontEndInterface {
         } else {
             //start a thread to handle the upload
             TransferHelper helper;
-            helper = new TransferHelper(port, true, exists, reliable);
+            helper = new TransferHelper(port, true, exists);
             Thread thread = new Thread(helper);
             thread.start();
         }
@@ -126,8 +126,13 @@ public class FrontEnd implements FrontEndInterface {
         return true;
     }
 
-    public void push() {
+    public void push(String filename, boolean exists, boolean reliable) {
 
+        if (reliable) {
+            //Handle multiple file upload using multiple threads, with the case if we are needing to overwrite
+        } else {
+            //Handle single server case
+        }
     }
 
     public void updateServers(ServerList availableServers) {

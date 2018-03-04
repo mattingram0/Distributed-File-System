@@ -8,6 +8,6 @@ public interface FrontEndInterface extends Remote {
 
     boolean upload(int port, String filename, boolean reliable) throws RemoteException;
 
-    void push() throws RemoteException;
+    void push(String filename, boolean exists, boolean reliable) throws RemoteException;
 
 }
