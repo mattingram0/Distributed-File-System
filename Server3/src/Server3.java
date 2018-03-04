@@ -1,9 +1,17 @@
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 
 public class Server3 implements ServerInterface {
+
+    public int numFiles() {
+        return 0;
+    }
 
     public void ping() {
     }
@@ -12,34 +20,43 @@ public class Server3 implements ServerInterface {
         return 0;
     }
 
-    ;
+    public ArrayList<String> list() {
+        ArrayList<String> listing = new ArrayList<>();
+        File[] listOfFiles = new File("files/").listFiles();
 
-    public String list() throws RemoteException {
-        return "";
+        for (File file : listOfFiles) {
+            listing.add(file.getName());
+        }
+
+        return listing;
     }
-
-    ;
 
     public void download() throws RemoteException {
     }
 
-    ;
-
     public void upload() throws RemoteException {
     }
 
-    ;
+
+    public void delete(String filename) throws RemoteException {
+        if (new File("files/" + filename).delete()) {
+            System.out.println("[+] " + filename + " deleted successfully from Server3");
+        } else {
+            System.out.println("[-] Unable to delete " + filename + " file from Server3");
+        }
+    }
 
     public static void main(String args[]) {
 
         try {
+
             //Setup security manager
             if (System.getSecurityManager() == null) {
                 System.setSecurityManager(new SecurityManager());
             }
 
             //Create front end, add it to registry to be used by clients
-            Server1 server3 = new Server1();
+            Server3 server3 = new Server3();
             ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(server3, 0);
             Registry registry = LocateRegistry.getRegistry("127.0.0.1", 38048);
             registry.rebind("Server3", stub);

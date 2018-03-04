@@ -2,8 +2,10 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -16,6 +18,8 @@ public class Client {
     private DataOutputStream dos;
     private BufferedInputStream bis;
     private BufferedOutputStream bos;
+    private String host;
+    private int port;
     FrontEndInterface frontEnd;
     Registry registry;
 
@@ -87,18 +91,12 @@ public class Client {
                     } else {
                         System.out.println("[-] Not connected to a server! Please use CONN to connect to a fileserver \n");
                     }
-
                     break;
 
 
                 case "LIST":
                     if (client.connected) {
-                        try {
-                            client.list();
-                        } catch (TransferException e) {
-                            System.out.println("[-] " + e.getMessage());
-                            System.out.println();
-                        }
+                        client.list();
                     } else {
                         System.out.println("[-] Not connected to a server! Please use CONN to connect to a fileserver \n");
                     }
@@ -283,10 +281,10 @@ public class Client {
         float startTime;
         float endTime;
         float uploadTime;
+        boolean reliable;
 
         //Get filename
         try {
-            dos.writeChars("UPLD");
             System.out.println("[*] Please enter filename to upload");
             System.out.print("> ");
             filename = scanner.nextLine();
@@ -306,7 +304,36 @@ public class Client {
             return;
         }
 
+        //Check if file needs to be stored reliably
+        System.out.println("[*] Backup file across multiple servers? (y/n)");
+        System.out.print("> ");
+        reliable = yesNo(scanner);
+
+        //Calls the remote upload function, which tells the front end to open a remote connection
+        //This step ensures the front ends listener socket is open before we try connect to it
         try {
+            if (!frontEnd.upload(9090, filename, reliable)) {
+                System.out.println("[-] No upload servers available, ");
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            //Create the socket connection to handle the file transfer (only)
+            this.socket = new Socket(host, 9090);
+
+            //Create the input and output streams for file transfer
+            dis = new DataInputStream(socket.getInputStream());
+            dos = new DataOutputStream(socket.getOutputStream());
+            bis = new BufferedInputStream(socket.getInputStream());
+            bos = new BufferedOutputStream(socket.getOutputStream());
+        } catch (IOException e) {
+
+        }
+
+        try {
+
             //Send filename length and filename
             dos.writeInt(uploadFile.getName().length());
             dos.writeChars(uploadFile.getName());
@@ -388,6 +415,9 @@ public class Client {
                 }
 
                 System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
+
+                //If the upload to the front end was successful, push the uploads to the other servers.
+                frontEnd.push();
             } else {
                 System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
             }
@@ -399,13 +429,27 @@ public class Client {
         System.out.println("");
     }
 
-    public void list() throws TransferException {
-        //
+    public void list() {
+        ArrayList<ArrayList<String>> listing;
+
+        try {
+            listing = frontEnd.list();
+
+            if (listing == null) {
+                System.out.println("[-] Server error, unable to retrieve directory listing");
+            } else {
+                for (ArrayList<String> list : listing) {
+                    for (String file : list) {
+                        System.out.println(file); //TODO: TEST
+                    }
+                }
+            }
+        } catch (RemoteException e) {
+            System.out.println("[-] Server error: " + e.getMessage());
+        }
     }
 
     public void connect(Scanner scanner) throws InputException {
-        String host;
-        int port;
 
         System.out.println("[*] Please enter a hostname or IP address to connect to: ");
         System.out.print("> ");
@@ -421,16 +465,21 @@ public class Client {
 
         try {
             port = scanner.nextInt();
+            scanner.nextLine();
         } catch (IllegalStateException | InputMismatchException e) {
             throw new InputException("Unable to read port number");
         }
 
         try {
+            //Connect to the registry
             registry = LocateRegistry.getRegistry(host, port);
             frontEnd = (FrontEndInterface) registry.lookup("FrontEnd");
+
+            System.out.println("[+] Successfully connected to " + host + " on port " + Integer.toString(port) + "\n");
+            connected = true;
+
         } catch (Exception e) {
-            System.out.println("[-] Unable to connect to front end server: " + e.toString());
-            e.printStackTrace();
+            throw new InputException("Unable to connect to front end server: " + e.toString());
         }
     }
 
@@ -451,5 +500,6 @@ public class Client {
     }
 
     protected void finalize() {
+
     }
 }
