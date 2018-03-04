@@ -18,6 +18,8 @@ public class Client {
     private DataOutputStream dos;
     private BufferedInputStream bis;
     private BufferedOutputStream bos;
+    private String host;
+    private int port;
     FrontEndInterface frontEnd;
     Registry registry;
 
@@ -281,7 +283,7 @@ public class Client {
         float startTime;
         float endTime;
         float uploadTime;
-        boolean important;
+        boolean reliable;
 
         //Get filename
         try {
@@ -308,105 +310,123 @@ public class Client {
         //Check if file needs to be stored reliably
         System.out.println("[*] Backup file across multiple servers? (y/n)");
         System.out.print("> ");
-        important = yesNo(scanner);
+        reliable = yesNo(scanner);
 
+        //Calls the remote upload function, which tells the front end to open a remote connection
+        //This step ensures the front ends listener socket is open before we try connect to it
         try {
-            if (important) { //TODO add to server side
-                dos.writeInt(1);
-            } else {
-                dos.writeInt(0);
+            if (!frontEnd.upload(9090, reliable)) {
+                System.out.println("[-] No upload servers available, ");
             }
-
-            //Send filename length and filename
-            dos.writeInt(uploadFile.getName().length());
-            dos.writeChars(uploadFile.getName());
-
-            buffer = new byte[1024];
-
-            //Read file into bytes buffer
-            while ((readBytes = bfis.read(buffer)) > 0) {
-                byteOutputStream.write(buffer, 0, readBytes);
-            }
-        } catch (IOException e) {
-            System.out.println("[-] Unable to read file ");
-            return;
+        } catch (RemoteException e) {
+            e.printStackTrace();
         }
 
         try {
-            //Send file length
-            buffer = byteOutputStream.toByteArray();
-            dos.writeInt(buffer.length);
+            //Create the socket connection to handle the file transfer (only)
+            this.socket = new Socket(host, 9090);
 
-            status = dis.readInt(); //TODO BISBOS
-            if (status == -1) {
-                throw new IOException();
-            }
+            //Create the input and output streams for file transfer
+            dis = new DataInputStream(socket.getInputStream());
+            dos = new DataOutputStream(socket.getOutputStream());
+            bis = new BufferedInputStream(socket.getInputStream());
+            bos = new BufferedOutputStream(socket.getOutputStream());
         } catch (IOException e) {
-            System.out.println("[-] No okay received from server");
+
         }
 
-        //Send file over stream, in chunks 100 of the total length
-        int chunkLength = buffer.length / 100;
-        int difference = buffer.length - (chunkLength * 100);
-        startTime = System.nanoTime();
-
-        try {
-            if (buffer.length > 100) { //If file over 100 bytes, use progress bar
-                for (int i = 0; i < 100; i++) {
-                    bos.write(buffer, i * chunkLength, chunkLength);
-
-                    if (i == 0) {
-                        progressBar = "[                                                                                                    ]" + "0%\r";
-                    } else {
-                        progressBar = "[" + String.format("%0" + i + "d" + "%" + (100 - i) + "s", 0, "").replace("0", "=") + "]" + Integer.toString(i) + "%\r";
-                    }
-
-                    System.out.print(progressBar);
-                }
-
-                bos.write(buffer, 100 * chunkLength, difference);
-                bos.flush(); //CRITICAL TO SEND THE LAST 21 bytes
-                progressBar = "[==================================================================================================]" + "100%\r";
-                System.out.println(progressBar);
-
-            } else {
-                //File too small to use the progress bar
-                bos.write(buffer);
-                bos.flush();
-            }
-
-            ///Users/matt/Documents/Durham/2nd Year/Networks and Systems/Assignment/client/test.jpg
-        } catch (IOException e) {
-            throw new TransferException("Error whilst sending file");
-        }
-
-        try {
-            bytesReceived = dis.readInt(); //TODO BISBOS
-            endTime = System.nanoTime();
-            uploadTime = (endTime - startTime) / 1000000;
-
-            if (bytesReceived == buffer.length) {
-                if (dis.readInt() == -1) {
-                    System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
-                    System.out.print("> ");
-
-
-                    if (!yesNo(scanner)) {
-                        System.out.println("");
-                        return;
-                    }
-                }
-
-                System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
-            } else {
-                System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
-            }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-            System.out.println("[-] Unable to read number of bytes received");
-        }
-
-        System.out.println("");
+//        try {
+//
+//            //Send filename length and filename
+//            dos.writeInt(uploadFile.getName().length());
+//            dos.writeChars(uploadFile.getName());
+//
+//            buffer = new byte[1024];
+//
+//            //Read file into bytes buffer
+//            while ((readBytes = bfis.read(buffer)) > 0) {
+//                byteOutputStream.write(buffer, 0, readBytes);
+//            }
+//        } catch (IOException e) {
+//            System.out.println("[-] Unable to read file ");
+//            return;
+//        }
+//
+//        try {
+//            //Send file length
+//            buffer = byteOutputStream.toByteArray();
+//            dos.writeInt(buffer.length);
+//
+//            status = dis.readInt(); //TODO BISBOS
+//            if (status == -1) {
+//                throw new IOException();
+//            }
+//        } catch (IOException e) {
+//            System.out.println("[-] No okay received from server");
+//        }
+//
+//        //Send file over stream, in chunks 100 of the total length
+//        int chunkLength = buffer.length / 100;
+//        int difference = buffer.length - (chunkLength * 100);
+//        startTime = System.nanoTime();
+//
+//        try {
+//            if (buffer.length > 100) { //If file over 100 bytes, use progress bar
+//                for (int i = 0; i < 100; i++) {
+//                    bos.write(buffer, i * chunkLength, chunkLength);
+//
+//                    if (i == 0) {
+//                        progressBar = "[                                                                                                    ]" + "0%\r";
+//                    } else {
+//                        progressBar = "[" + String.format("%0" + i + "d" + "%" + (100 - i) + "s", 0, "").replace("0", "=") + "]" + Integer.toString(i) + "%\r";
+//                    }
+//
+//                    System.out.print(progressBar);
+//                }
+//
+//                bos.write(buffer, 100 * chunkLength, difference);
+//                bos.flush(); //CRITICAL TO SEND THE LAST 21 bytes
+//                progressBar = "[==================================================================================================]" + "100%\r";
+//                System.out.println(progressBar);
+//
+//            } else {
+//                //File too small to use the progress bar
+//                bos.write(buffer);
+//                bos.flush();
+//            }
+//
+//            ///Users/matt/Documents/Durham/2nd Year/Networks and Systems/Assignment/client/test.jpg
+//        } catch (IOException e) {
+//            throw new TransferException("Error whilst sending file");
+//        }
+//
+//        try {
+//            bytesReceived = dis.readInt(); //TODO BISBOS
+//            endTime = System.nanoTime();
+//            uploadTime = (endTime - startTime) / 1000000;
+//
+//            if (bytesReceived == buffer.length) {
+//                if (dis.readInt() == -1) {
+//                    System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
+//                    System.out.print("> ");
+//
+//
+//                    if (!yesNo(scanner)) {
+//                        System.out.println("");
+//                        return;
+//                    }
+//                }
+//
+//                System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
+//            } else {
+//                System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
+//            }
+//        } catch (IOException e) {
+//            System.out.println(e.getMessage());
+//            System.out.println("[-] Unable to read number of bytes received");
+//        }
+//
+//        System.out.println("");
     }
 
     public void list() {
@@ -430,8 +450,6 @@ public class Client {
     }
 
     public void connect(Scanner scanner) throws InputException {
-        String host;
-        int port;
 
         System.out.println("[*] Please enter a hostname or IP address to connect to: ");
         System.out.print("> ");
@@ -456,15 +474,6 @@ public class Client {
             //Connect to the registry
             registry = LocateRegistry.getRegistry(host, port);
             frontEnd = (FrontEndInterface) registry.lookup("FrontEnd");
-
-            //Create the socket connection to handle the file transfer (only)
-            this.socket = new Socket(host, port);
-
-            //Create the input and output streams for file transfer
-            dis = new DataInputStream(socket.getInputStream());
-            dos = new DataOutputStream(socket.getOutputStream());
-            bis = new BufferedInputStream(socket.getInputStream());
-            bos = new BufferedOutputStream(socket.getOutputStream());
 
             System.out.println("[+] Successfully connected to " + host + " on port " + Integer.toString(port) + "\n");
             connected = true;

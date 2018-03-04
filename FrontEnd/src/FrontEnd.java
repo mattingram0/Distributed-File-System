@@ -1,4 +1,6 @@
 import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.registry.Registry;
@@ -64,7 +66,7 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public void upload() {
+    public boolean upload(int port, boolean reliable) {
         ServerInterface emptiestServer = null;
         ServerList availableServers = checkStatus();
         ArrayList<ServerInterface> listOfServers = availableServers.getServers();
@@ -73,7 +75,7 @@ public class FrontEnd implements FrontEndInterface {
 
         //Ensure there are servers available
         if (listOfServers.size() == 0) {
-            // TODO handle no servers available
+            return false;
         }
 
         //Update the necessary servers
@@ -97,9 +99,16 @@ public class FrontEnd implements FrontEndInterface {
 
         if (emptiestServer == null) {
             // handle all servers failed to respond to list operation
+            return false;
         } else {
-            //create socket connection to handle the upload, check the upload doesn't exist on any of them
+            //start a thread to handle the upload
+            UploadHelper helper;
+            helper = new UploadHelper(port, true, reliable);
+            Thread thread = new Thread(helper);
+            thread.start();
         }
+
+        return true;
     }
 
     public void updateServers(ServerList availableServers) {
