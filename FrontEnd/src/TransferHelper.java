@@ -26,6 +26,7 @@ public class TransferHelper implements Runnable {
     }
 
     public void run() {
+
         System.setProperty("java.security.policy", "server.policy"); //TODO test if required
 
         try {
@@ -73,7 +74,7 @@ public class TransferHelper implements Runnable {
                 filename.append(dis.readChar());
             }
 
-            filesize = dis.readInt();
+            System.out.println("executed");
 
             //Check if file exists, and if user wants to overwrite
             if (exists) {
@@ -81,6 +82,8 @@ public class TransferHelper implements Runnable {
             } else {
                 dos.writeInt(0);
             }
+
+            System.out.println("qaeirwibfqihwexecuted");
 
             if (dis.readInt() != 0) {
                 System.out.println("[-] User cancelled upload");
@@ -94,6 +97,8 @@ public class TransferHelper implements Runnable {
         }
 
         try {
+            filesize = dis.readInt();
+
             //Receive and read bytes
             while (totalBytes < filesize) {
                 readBytes = bis.read(buffer);
@@ -104,22 +109,22 @@ public class TransferHelper implements Runnable {
             //Send number of bytes received
             buffer = outputStream.toByteArray();
             dos.writeInt(buffer.length);
+
+            //Write buffer to file
+            if (buffer.length == filesize) {
+                try {
+                    outputFile = new File("files/" + filename.toString());
+                    outputFile.createNewFile();
+                    fileOutputStream = new FileOutputStream(outputFile);
+                    fileOutputStream.write(buffer);
+                } catch (IOException e) {
+                    System.out.println("[-] Unable to save file");
+                }
+            } else {
+                System.out.println("[-] Incorrect number of bytes received, file not saved");
+            }
         } catch (IOException e) {
             System.out.println("[-] Unable to read file ");
-        }
-
-        //Write buffer to file
-        if (buffer.length == filesize) {
-            try {
-                outputFile = new File("files/" + filename.toString());
-                outputFile.createNewFile();
-                fileOutputStream = new FileOutputStream(outputFile);
-                fileOutputStream.write(buffer);
-            } catch (IOException e) {
-                System.out.println("[-] Unable to save file");
-            }
-        } else {
-            System.out.println("[-] Incorrect number of bytes received, file not saved");
         }
 
         try {

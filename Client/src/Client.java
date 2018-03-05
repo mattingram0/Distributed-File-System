@@ -345,9 +345,11 @@ public class Client {
         }
 
         try {
-            //Send file length
+            //Send file length and filesize
             buffer = byteOutputStream.toByteArray();
             dos.writeInt(buffer.length);
+
+            System.out.println("executed");
 
             //Check if file exists or not before upload:
             if (dis.readInt() == -1) {
@@ -365,6 +367,8 @@ public class Client {
             } else {
                 exists = false;
             }
+
+            System.out.println("qieyrgviqywlib  e");
 
             status = dis.readInt(); //TODO BISBOS
             if (status == -1) {
