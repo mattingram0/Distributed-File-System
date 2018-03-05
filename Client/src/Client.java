@@ -333,21 +333,6 @@ public class Client {
         }
 
         try {
-
-            //Check if file exists or not before upload:
-            if (dis.readInt() == -1) {
-                System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
-                System.out.print("> ");
-
-                if (yesNo(scanner)) {
-                    dos.writeInt(0);
-                } else {
-                    dos.writeInt(-1);
-                    System.out.println("");
-                    return;
-                }
-            }
-
             buffer = new byte[1024];
 
             //Read file into bytes buffer
@@ -363,6 +348,23 @@ public class Client {
             //Send file length
             buffer = byteOutputStream.toByteArray();
             dos.writeInt(buffer.length);
+
+            //Check if file exists or not before upload:
+            if (dis.readInt() == -1) {
+                exists = true;
+                System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
+                System.out.print("> ");
+
+                if (yesNo(scanner)) {
+                    dos.writeInt(0);
+                } else {
+                    dos.writeInt(-1);
+                    System.out.println("");
+                    return;
+                }
+            } else {
+                exists = false;
+            }
 
             status = dis.readInt(); //TODO BISBOS
             if (status == -1) {
@@ -413,19 +415,6 @@ public class Client {
             uploadTime = (endTime - startTime) / 1000000;
 
             if (bytesReceived == buffer.length) {
-                if (dis.readInt() == -1) {
-                    System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
-                    System.out.print("> ");
-
-                    exists = true;
-                    if (!yesNo(scanner)) {
-                        System.out.println("");
-                        return;
-                    }
-                } else {
-                    exists = false;
-                }
-
                 System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
 
                 //If the upload to the front end was successful, push the uploads to the other servers.

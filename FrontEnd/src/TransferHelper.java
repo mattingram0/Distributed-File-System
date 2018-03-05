@@ -76,7 +76,7 @@ public class TransferHelper implements Runnable {
             filesize = dis.readInt();
 
             //Check if file exists, and if user wants to overwrite
-            if (new File(filename.toString()).isFile()) {
+            if (exists) {
                 dos.writeInt(-1);
             } else {
                 dos.writeInt(0);
