@@ -334,9 +334,19 @@ public class Client {
 
         try {
 
-            //Send filename length and filename
-            dos.writeInt(uploadFile.getName().length());
-            dos.writeChars(uploadFile.getName());
+            //Check if file exists or not before upload:
+            if (dis.readInt() == -1) {
+                System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
+                System.out.print("> ");
+
+                if (yesNo(scanner)) {
+                    dos.writeInt(0);
+                } else {
+                    dos.writeInt(-1);
+                    System.out.println("");
+                    return;
+                }
+            }
 
             buffer = new byte[1024];
 
@@ -419,7 +429,7 @@ public class Client {
                 System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
 
                 //If the upload to the front end was successful, push the uploads to the other servers.
-                frontEnd.push(filename, exists, reliable);
+                //TODO change this back: frontEnd.push(filename, exists, reliable);
             } else {
                 System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
             }

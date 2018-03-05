@@ -66,6 +66,7 @@ public class TransferHelper implements Runnable {
         File outputFile;
 
         try {
+            //Read file
             filenameLength = dis.readInt();
 
             for (int i = 0; i < filenameLength; i++) {
@@ -73,6 +74,17 @@ public class TransferHelper implements Runnable {
             }
 
             filesize = dis.readInt();
+
+            //Check if file exists, and if user wants to overwrite
+            if (new File(filename.toString()).isFile()) {
+                dos.writeInt(-1);
+            } else {
+                dos.writeInt(0);
+            }
+
+            if (dis.readInt() != 0) {
+                System.out.println("[-] User cancelled upload");
+            }
 
             //Send ready to receive bytes
             dos.writeInt(0);
@@ -99,14 +111,6 @@ public class TransferHelper implements Runnable {
         //Write buffer to file
         if (buffer.length == filesize) {
             try {
-
-                //Check if user wants to overwrite
-                if (exists) {
-                    dos.writeInt(-1);
-                } else {
-                    dos.writeInt(0);
-                }
-
                 outputFile = new File("files/" + filename.toString());
                 outputFile.createNewFile();
                 fileOutputStream = new FileOutputStream(outputFile);
@@ -116,6 +120,13 @@ public class TransferHelper implements Runnable {
             }
         } else {
             System.out.println("[-] Incorrect number of bytes received, file not saved");
+        }
+
+        try {
+            socket.close();
+            listener.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
