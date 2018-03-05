@@ -20,5 +20,7 @@ public interface ServerInterface extends Remote {
 
     void download() throws RemoteException;
 
-    void upload() throws RemoteException;
+    boolean upload(int port) throws RemoteException;
+
+    String getIpAddress() throws RemoteException;
 }

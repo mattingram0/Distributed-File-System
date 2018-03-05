@@ -66,15 +66,13 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
+    //Upload a file to front end server
     public boolean upload(int port, String filename, boolean reliable) {
-        ServerInterface emptiestServer = null;
         ServerList availableServers;
         ArrayList<ServerInterface> listOfServers;
         ArrayList<File> listOfFileLists;
         ArrayList<ArrayList<String>> listOfCorrectFilesOnServer;
         boolean exists = false;
-        int numFiles;
-        int minimum = Integer.MAX_VALUE;
 
         availableServers = checkStatus();
         listOfServers = availableServers.getServers();
@@ -91,20 +89,6 @@ public class FrontEnd implements FrontEndInterface {
             updateServers(availableServers);
         }
 
-        //Find the emptiest server
-        for (ServerInterface server : listOfServers) {
-            try {
-                numFiles = server.numFiles();
-
-                if (numFiles < minimum) {
-                    minimum = numFiles;
-                    emptiestServer = server;
-                }
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-
         //Check to see if filename exists on any of the servers:
         for (ArrayList<String> filesOnServer : listOfCorrectFilesOnServer) {
             if (filesOnServer.contains(filename)) {
@@ -112,26 +96,117 @@ public class FrontEnd implements FrontEndInterface {
             }
         }
 
-        if (emptiestServer == null) {
-            // handle all servers failed to respond to list operation
-            return false;
-        } else {
-            //start a thread to handle the upload
-            TransferHelper helper;
-            helper = new TransferHelper(port, true, exists);
-            Thread thread = new Thread(helper);
-            thread.start();
-        }
+        //Start a thread to handle the upload
+        TransferHelper helper;
+        helper = new TransferHelper(port, "U", exists);
+        Thread thread = new Thread(helper);
+        thread.start();
 
         return true;
     }
 
+    //Push the files to one or many servers
     public void push(String filename, boolean exists, boolean reliable) {
+        ServerInterface emptiestServer = null;
+        ServerList availableServers;
+        ArrayList<ServerInterface> listOfAvailableServers;
+        ArrayList<ServerInterface> listOfAllServers;
+        ArrayList<File> listOfFileLists;
+        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer;
+        int numFiles;
+        int minimum = Integer.MAX_VALUE;
+        int readBytes;
+        byte[] buffer;
+        File downloadFile;
+        ByteArrayOutputStream byteOutputStream;
+        BufferedInputStream bfis;
+
+        Socket socket;
+        DataInputStream dis;
+        DataOutputStream dos;
+        BufferedInputStream bis;
+        BufferedOutputStream bos;
+
+
+        availableServers = checkStatus();
+        listOfAvailableServers = availableServers.getServers();
+        listOfFileLists = availableServers.getFileLists();
+        listOfCorrectFilesOnServer = getCorrectFiles(listOfFileLists);
+        listOfAllServers = new ArrayList<>(Arrays.asList(server1, server2, server3));
+
+        //TODO: handle no servers available - send back to client, delete files from front end.
 
         if (reliable) {
             //Handle multiple file upload using multiple threads, with the case if we are needing to overwrite
         } else {
             //Handle single server case
+
+            //Find the emptiest server
+            for (ServerInterface server : listOfAvailableServers) {
+                try {
+                    numFiles = server.numFiles();
+
+                    if (numFiles < minimum) {
+                        minimum = numFiles;
+                        emptiestServer = server;
+                    }
+
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (exists) { //TODO handle the deletion of the files
+                //Calls the remote upload function, which tells the front end to open a remote connection
+                //This step ensures the front ends listener socket is open before we try connect to it
+                try {
+                    if (!emptiestServer.upload(9091)) {
+                        System.out.println("[-] No upload servers available, ");
+                    }
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    //Create the socket connection to handle the file transfer (only)
+                    socket = new Socket(emptiestServer.getIpAddress(), 9090);
+
+                    //Create output streams
+                    dos = new DataOutputStream(socket.getOutputStream());
+                    bos = new BufferedOutputStream(socket.getOutputStream());
+
+
+                    //Check file exists
+                    if (new File("files/" + filename).isFile()) {
+                        downloadFile = new File(filename);
+                        bfis = new BufferedInputStream(new FileInputStream(downloadFile));
+                        byteOutputStream = new ByteArrayOutputStream();
+
+                        buffer = new byte[1024];
+
+                        //Read file into buffer
+                        while ((readBytes = bfis.read(buffer)) > 0) {
+                            byteOutputStream.write(buffer, 0, readBytes);
+                        }
+                    } else {
+                        //TODO handle this case that somehow the file uploaded to the front end can't be found
+                        return;
+                    }
+
+                    //Send file size
+                    buffer = byteOutputStream.toByteArray();
+                    dos.writeInt(buffer.length);
+
+                    //Send file
+                    bos.write(buffer, 0, buffer.length);
+                    bos.flush();
+                } catch (IOException e) {
+                    //TODO
+                }
+            } else {
+
+            }
+
         }
     }
 

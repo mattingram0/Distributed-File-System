@@ -9,6 +9,13 @@ import java.util.ArrayList;
 
 public class Server3 implements ServerInterface {
 
+    String ip; //IP address this server is running on, to allow for socket creation
+
+    @Override
+    public String getIpAddress() {
+        return this.ip;
+    }
+
     public int numFiles() {
         return 0;
     }
@@ -34,7 +41,8 @@ public class Server3 implements ServerInterface {
     public void download() throws RemoteException {
     }
 
-    public void upload() throws RemoteException {
+    public boolean upload(int port) throws RemoteException {
+        return false;
     }
 
 

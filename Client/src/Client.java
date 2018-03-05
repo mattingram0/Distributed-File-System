@@ -265,7 +265,6 @@ public class Client {
     }
 
     public void delete(Scanner scanner) throws TransferException {
-
     }
 
     public void upload(Scanner scanner) throws TransferException {
@@ -282,6 +281,7 @@ public class Client {
         float endTime;
         float uploadTime;
         boolean reliable;
+        boolean exists;
 
         //Get filename
         try {
@@ -407,17 +407,19 @@ public class Client {
                     System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
                     System.out.print("> ");
 
-
+                    exists = true;
                     if (!yesNo(scanner)) {
                         System.out.println("");
                         return;
                     }
+                } else {
+                    exists = false;
                 }
 
                 System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
 
                 //If the upload to the front end was successful, push the uploads to the other servers.
-                frontEnd.push();
+                frontEnd.push(filename, exists, reliable);
             } else {
                 System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
             }

@@ -10,6 +10,13 @@ import java.util.ArrayList;
 
 public class Server1 implements ServerInterface {
 
+    String ip; //IP address this server is running on, to allow for socket creation
+
+    @Override
+    public String getIpAddress() {
+        return this.ip;
+    }
+
     public int numFiles() {
         return 0;
     }
@@ -35,7 +42,12 @@ public class Server1 implements ServerInterface {
     public void download() throws RemoteException {
     }
 
-    public void upload() throws RemoteException {
+    public boolean upload(int port) {
+        TransferHelper helper;
+        helper = new TransferHelper(port, "P");
+        Thread thread = new Thread(helper);
+        thread.start();
+        return true;
     }
 
     public void delete(String filename) throws RemoteException {

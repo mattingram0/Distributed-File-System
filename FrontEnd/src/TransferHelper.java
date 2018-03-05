@@ -4,7 +4,7 @@ import java.net.Socket;
 
 public class TransferHelper implements Runnable {
     int port;
-    boolean type;
+    String type;
     boolean exists;
     ServerSocket listener;
     Socket socket;
@@ -13,20 +13,17 @@ public class TransferHelper implements Runnable {
     private BufferedInputStream bis;
 
     //Client -> FrontEnd
-    TransferHelper(int port, boolean type, boolean exists) {
+    TransferHelper(int port, String type, boolean exists) {
         this.port = port;
         this.type = type; //True for upload, false for download
         this.exists = exists;
     }
 
-    //FrontEnd -> Client
-    TransferHelper(int port, boolean type) {
+    //FrontEnd -> Client and FrontEnd -> Server
+    TransferHelper(int port, String type) {
         this.port = port;
         this.type = type; //True for upload, false for download
     }
-
-    //FrontEnd -> Server
-
 
     public void run() {
         System.setProperty("java.security.policy", "server.policy"); //TODO test if required
@@ -42,10 +39,14 @@ public class TransferHelper implements Runnable {
                 break;
             }
 
-            if (type) {
+            if (type.equals("U")) {
                 upload();
-            } else {
+            } else if (type.equals("D")) {
                 download();
+            } else if (type.equals("P")) {
+                push();
+            } else {
+                //Incorrect type given
             }
 
         } catch (IOException e) {
@@ -119,6 +120,10 @@ public class TransferHelper implements Runnable {
     }
 
     public void download() {
+
+    }
+
+    public void push() {
 
     }
 }
