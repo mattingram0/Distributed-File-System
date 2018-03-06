@@ -193,6 +193,7 @@ public class Client {
             dos.writeInt(filename.length());
             dos.writeChars(filename);
             dos.flush();
+
             filesize = dis.readInt();
             bytesRemaining = filesize;
 
@@ -345,11 +346,12 @@ public class Client {
         }
 
         try {
-            //Send file length and filesize
             buffer = byteOutputStream.toByteArray();
-            dos.writeInt(buffer.length);
 
-            System.out.println("executed");
+            //Send filename length and filename
+            dos.writeInt(filename.length());
+            dos.writeChars(filename);
+            dos.flush();
 
             //Check if file exists or not before upload:
             if (dis.readInt() == -1) {
@@ -364,18 +366,26 @@ public class Client {
                     System.out.println("");
                     return;
                 }
+
             } else {
                 exists = false;
             }
 
-            System.out.println("qieyrgviqywlib  e");
-
+            //read status
             status = dis.readInt(); //TODO BISBOS
             if (status == -1) {
                 throw new IOException();
             }
+
         } catch (IOException e) {
             System.out.println("[-] No okay received from server");
+        }
+
+        try {
+            //Send file length
+            dos.writeInt(buffer.length);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         //Send file over stream, in chunks 100 of the total length
@@ -426,6 +436,7 @@ public class Client {
             } else {
                 System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
             }
+
         } catch (IOException e) {
             System.out.println(e.getMessage());
             System.out.println("[-] Unable to read number of bytes received");

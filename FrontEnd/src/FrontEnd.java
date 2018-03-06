@@ -107,106 +107,179 @@ public class FrontEnd implements FrontEndInterface {
 
     //Push the files to one or many servers
     public void push(String filename, boolean exists, boolean reliable) {
-        ServerInterface emptiestServer = null;
         ServerList availableServers;
-        ArrayList<ServerInterface> listOfAvailableServers;
+
+        ServerInterface emptiestServer = null;
+        File emptiestServerList = null;
+        ArrayList<String> emptiestServerFiles = null;
+
         ArrayList<ServerInterface> listOfAllServers;
-        ArrayList<File> listOfFileLists;
-        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer;
+        ArrayList<ArrayList<String>> listOfListOfAllFiles;
+        ArrayList<File> listOfAllFileLists;
+
+        ArrayList<ServerInterface> listOfAvailableServers;
+        ArrayList<File> listOfAllAvailableFileLists;
+        ArrayList<ArrayList<String>> listOfListOfAllAvailableFiles;
+
         int numFiles;
         int minimum = Integer.MAX_VALUE;
-        int readBytes;
-        byte[] buffer;
-        File downloadFile;
-        ByteArrayOutputStream byteOutputStream;
-        BufferedInputStream bfis;
 
-        Socket socket;
-        DataInputStream dis;
-        DataOutputStream dos;
-        BufferedInputStream bis;
-        BufferedOutputStream bos;
-
+        //Don't update servers as this is only called if the upload() succeeds
 
         availableServers = checkStatus();
+
+        //Get the AVAILABLE servers, their filelists, and the files within these filelists
         listOfAvailableServers = availableServers.getServers();
-        listOfFileLists = availableServers.getFileLists();
-        listOfCorrectFilesOnServer = getCorrectFiles(listOfFileLists);
+        listOfAllAvailableFileLists = availableServers.getFileLists();
+        listOfListOfAllAvailableFiles = getCorrectFiles(listOfAllAvailableFileLists);
+
+        //Get all the servers, their filelists, and the files within these filelists
         listOfAllServers = new ArrayList<>(Arrays.asList(server1, server2, server3));
+        listOfAllFileLists = new ArrayList<>(Arrays.asList(fileList1, fileList2, fileList3));
+        listOfListOfAllFiles = getCorrectFiles(listOfAllFileLists);
+
+        //If the file already exists and the user wants to overwrite, delete the file off all servers it exists on
+        //If it exists on a server that is not up, delete it from its file list, which will then be processed when
+        //the server next comes online by the updateServers() method
+        if (exists) {
+            for (int i = 0; i < 3; i++) {
+                if (listOfListOfAllFiles.get(i).contains(filename)) {
+                    if (listOfAvailableServers.contains(listOfAllServers.get(i))) {
+                        try {
+                            listOfAllServers.get(i).delete(filename);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                            //TODO handle this exception
+                        }
+                    }
+                    removeFileFromList(listOfAllFileLists.get(i), listOfListOfAllFiles.get(i), filename);
+                }
+            }
+        }
 
         //TODO: handle no servers available - send back to client, delete files from front end.
 
         if (reliable) {
             //Handle multiple file upload using multiple threads, with the case if we are needing to overwrite
+            for (int i = 0; i < listOfAvailableServers.size(); i++) {
+                sendToServer(listOfAvailableServers.get(i), filename, 9091 + i);
+                addFileToList(listOfAllAvailableFileLists.get(i), listOfListOfAllAvailableFiles.get(i), filename);
+            }
         } else {
-            //Handle single server case
-
-            //Find the emptiest server
-            for (ServerInterface server : listOfAvailableServers) {
+            //Handle single server case, by first finding the emptiest server
+            for (int i = 0; i < listOfAvailableServers.size(); i++) {
                 try {
-                    numFiles = server.numFiles();
+                    numFiles = listOfAvailableServers.get(i).numFiles();
 
                     if (numFiles < minimum) {
                         minimum = numFiles;
-                        emptiestServer = server;
+                        emptiestServer = listOfAvailableServers.get(i);
+                        emptiestServerList = listOfAllAvailableFileLists.get(i);
+                        emptiestServerFiles = listOfListOfAllAvailableFiles.get(i);
                     }
 
                 } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if (exists) { //TODO handle the deletion of the files
-                //Calls the remote upload function, which tells the front end to open a remote connection
-                //This step ensures the front ends listener socket is open before we try connect to it
-                try {
-                    if (!emptiestServer.upload(9091)) {
-                        System.out.println("[-] No upload servers available, ");
-                    }
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
-
-                try {
-                    //Create the socket connection to handle the file transfer (only)
-                    socket = new Socket(emptiestServer.getIpAddress(), 9090);
-
-                    //Create output streams
-                    dos = new DataOutputStream(socket.getOutputStream());
-                    bos = new BufferedOutputStream(socket.getOutputStream());
-
-
-                    //Check file exists
-                    if (new File("files/" + filename).isFile()) {
-                        downloadFile = new File(filename);
-                        bfis = new BufferedInputStream(new FileInputStream(downloadFile));
-                        byteOutputStream = new ByteArrayOutputStream();
-
-                        buffer = new byte[1024];
-
-                        //Read file into buffer
-                        while ((readBytes = bfis.read(buffer)) > 0) {
-                            byteOutputStream.write(buffer, 0, readBytes);
-                        }
-                    } else {
-                        //TODO handle this case that somehow the file uploaded to the front end can't be found
-                        return;
-                    }
-
-                    //Send file size
-                    buffer = byteOutputStream.toByteArray();
-                    dos.writeInt(buffer.length);
-
-                    //Send file
-                    bos.write(buffer, 0, buffer.length);
-                    bos.flush();
-                } catch (IOException e) {
                     //TODO
                 }
-            } else {
-
             }
 
+            sendToServer(emptiestServer, filename, 9091);
+            addFileToList(emptiestServerList, emptiestServerFiles, filename);
+        }
+    }
+
+    public void sendToServer(ServerInterface server, String filename, int port) {
+        int readBytes;
+        byte[] buffer;
+        File downloadFile;
+        ByteArrayOutputStream byteOutputStream;
+        BufferedInputStream bfis;
+        DataOutputStream dos;
+        BufferedOutputStream bos;
+        Socket socket;
+
+        //Calls the remote upload function, which tells the front end to open a remote connection
+        //This step ensures the front ends listener socket is open before we try connect to it
+        try {
+            if (!server.upload(port)) {
+                System.out.println("[-] No upload servers available, ");
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            //Create the socket connection to handle the file transfer (only)
+            socket = new Socket(server.getIpAddress(), 9091);
+
+            //Create output streams
+            dos = new DataOutputStream(socket.getOutputStream());
+            bos = new BufferedOutputStream(socket.getOutputStream());
+
+
+            //Check file exists
+            if (new File("files/" + filename).isFile()) {
+                downloadFile = new File(filename);
+                bfis = new BufferedInputStream(new FileInputStream(downloadFile));
+                byteOutputStream = new ByteArrayOutputStream();
+
+                buffer = new byte[1024];
+
+                //Read file into buffer
+                while ((readBytes = bfis.read(buffer)) > 0) {
+                    byteOutputStream.write(buffer, 0, readBytes);
+                }
+            } else {
+                //TODO handle this case that somehow the file uploaded to the front end can't be found
+                return;
+            }
+
+            //Send filename length and filename
+            dos.writeInt(filename.length());
+            dos.writeChars(filename);
+            dos.flush();
+
+            //Send file size
+            buffer = byteOutputStream.toByteArray();
+            dos.writeInt(buffer.length);
+
+            //Send file
+            bos.write(buffer, 0, buffer.length);
+            bos.flush();
+
+            socket.close();
+        } catch (IOException e) {
+            //TODO
+        }
+    }
+
+    public void removeFileFromList(File filelist, ArrayList<String> files, String fileToRemove) {
+        try {
+            files.remove(fileToRemove);
+            FileWriter writer = new FileWriter(filelist);
+
+            for (String file : files) {
+                writer.write(file + "\n");
+            }
+
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace(); //TODO handle
+        }
+    }
+
+    public void addFileToList(File filelist, ArrayList<String> files, String fileToAdd) {
+        try {
+            files.add(fileToAdd);
+            FileWriter writer = new FileWriter(filelist);
+
+            for (String file : files) {
+                writer.write(file + "\n");
+            }
+
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace(); //TODO handle
         }
     }
 

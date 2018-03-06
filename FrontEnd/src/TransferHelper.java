@@ -67,36 +67,50 @@ public class TransferHelper implements Runnable {
         File outputFile;
 
         try {
-            //Read file
+            //Read filename length
             filenameLength = dis.readInt();
 
+            //Read filename
             for (int i = 0; i < filenameLength; i++) {
                 filename.append(dis.readChar());
             }
 
-            System.out.println("executed");
-
             //Check if file exists, and if user wants to overwrite
             if (exists) {
                 dos.writeInt(-1);
+
+                if (dis.readInt() != 0) {
+                    System.out.println("[-] User cancelled upload");
+                    try {
+                        socket.close();
+                        listener.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    return;
+                }
+
             } else {
                 dos.writeInt(0);
-            }
-
-            System.out.println("qaeirwibfqihwexecuted");
-
-            if (dis.readInt() != 0) {
-                System.out.println("[-] User cancelled upload");
             }
 
             //Send ready to receive bytes
             dos.writeInt(0);
         } catch (IOException e) {
             System.out.println("[-] Unable to read filename or filesize");
+
+            try {
+                socket.close();
+                listener.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
             return;
         }
 
         try {
+            //Read file size
             filesize = dis.readInt();
 
             //Receive and read bytes
@@ -133,6 +147,7 @@ public class TransferHelper implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
     public void download() {
@@ -140,6 +155,56 @@ public class TransferHelper implements Runnable {
     }
 
     public void push() {
+        int filenameLength;
+        int filesize;
+        int readBytes;
+        int totalBytes = 0;
+        byte[] buffer = new byte[1024];
+        StringBuilder filename = new StringBuilder();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        FileOutputStream fileOutputStream;
+        File outputFile;
+
+        try {
+            //Read filename length
+            filenameLength = dis.readInt();
+
+            //Read filename
+            for (int i = 0; i < filenameLength; i++) {
+                filename.append(dis.readChar());
+            }
+
+            //Read filesize
+            filesize = dis.readInt();
+
+            //Receive and read bytes
+            while (totalBytes < filesize) {
+                readBytes = bis.read(buffer);
+                outputStream.write(buffer, 0, readBytes);
+                totalBytes += readBytes;
+            }
+
+            //Write buffer to file
+            if (buffer.length == filesize) {
+                try {
+                    outputFile = new File("files/" + filename.toString());
+                    outputFile.createNewFile();
+                    fileOutputStream = new FileOutputStream(outputFile);
+                    fileOutputStream.write(buffer);
+                } catch (IOException e) {
+                    //TODO handle
+                }
+            } else {
+                //TODO handle
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+
 
     }
 }
