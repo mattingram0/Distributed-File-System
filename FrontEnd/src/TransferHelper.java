@@ -4,6 +4,8 @@ import java.net.Socket;
 
 public class TransferHelper implements Runnable {
     int port;
+    String host;
+    String filename;
     String type;
     boolean exists;
     ServerSocket listener;
@@ -11,6 +13,14 @@ public class TransferHelper implements Runnable {
     private DataInputStream dis;
     private DataOutputStream dos;
     private BufferedInputStream bis;
+
+    //FrontEnd -> Server
+    TransferHelper(String host, int port, String filename, String type) {
+        this.host = host;
+        this.port = port;
+        this.filename = filename;
+        this.type = type;
+    }
 
     //Client -> FrontEnd
     TransferHelper(int port, String type, boolean exists) {
@@ -29,29 +39,35 @@ public class TransferHelper implements Runnable {
 
         System.setProperty("java.security.policy", "server.policy"); //TODO test if required
 
-        try {
-            listener = new ServerSocket(port);
+        if (type.equals("P")) {
+            try {
+                socket = new Socket(host, port);
+                push();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                listener = new ServerSocket(port);
 
-            while (true) {
                 socket = listener.accept();
                 dis = new DataInputStream(socket.getInputStream());
                 dos = new DataOutputStream(socket.getOutputStream());
                 bis = new BufferedInputStream(socket.getInputStream());
-                break;
-            }
 
-            if (type.equals("U")) {
-                upload();
-            } else if (type.equals("D")) {
-                download();
-            } else if (type.equals("P")) {
-                push();
-            } else {
-                //Incorrect type given
-            }
+                if (type.equals("U")) {
+                    upload();
+                } else if (type.equals("D")) {
+                    download();
+                } else if (type.equals("R")) {
+                    receive();
+                } else {
+                    //Incorrect type given
+                }
 
-        } catch (IOException e) {
-            e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -125,7 +141,7 @@ public class TransferHelper implements Runnable {
             dos.writeInt(buffer.length);
 
             //Write buffer to file
-            if (buffer.length == filesize) {
+            if (totalBytes == filesize) {
                 try {
                     outputFile = new File("files/" + filename.toString());
                     outputFile.createNewFile();
@@ -138,6 +154,7 @@ public class TransferHelper implements Runnable {
                 System.out.println("[-] Incorrect number of bytes received, file not saved");
             }
         } catch (IOException e) {
+            e.printStackTrace();
             System.out.println("[-] Unable to read file ");
         }
 
@@ -147,7 +164,6 @@ public class TransferHelper implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     public void download() {
@@ -155,6 +171,84 @@ public class TransferHelper implements Runnable {
     }
 
     public void push() {
+        int readBytes;
+        byte[] buffer;
+        File uploadFile;
+        ByteArrayOutputStream byteOutputStream;
+        BufferedInputStream bfis;
+        DataOutputStream dos;
+        BufferedOutputStream bos;
+
+        try {
+            //Create the socket connection to handle the file transfer (only)
+
+            //Create output streams
+            dos = new DataOutputStream(socket.getOutputStream());
+            bos = new BufferedOutputStream(socket.getOutputStream());
+
+            //Check file exists
+            if (new File("files/" + filename).isFile()) {
+                System.out.println(filename);
+                uploadFile = new File("files/" + filename);
+                bfis = new BufferedInputStream(new FileInputStream(uploadFile));
+                byteOutputStream = new ByteArrayOutputStream();
+
+                buffer = new byte[1024];
+
+                //Read file into buffer
+                while ((readBytes = bfis.read(buffer)) > 0) {
+                    byteOutputStream.write(buffer, 0, readBytes);
+                }
+            } else {
+                //TODO handle this case that somehow the file uploaded to the front end can't be found
+                try {
+                    socket.close();
+                    listener.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
+
+            //Send filename length and filename
+            dos.writeInt(filename.length());
+            dos.writeChars(filename);
+            dos.flush();
+
+            //Send file size
+            buffer = byteOutputStream.toByteArray();
+            dos.writeInt(buffer.length);
+
+            //Send file
+            bos.write(buffer, 0, buffer.length);
+            bos.flush();
+
+            socket.close();
+
+            //As multiple threads may be using the same file, all will run until last one using it deletes file
+            while (uploadFile.exists()) {
+                uploadFile.delete();
+            }
+
+        } catch (IOException e) {
+            try {
+                socket.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            System.out.println("push error" + e.getMessage());
+            //TODO
+        }
+
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void receive() {
+
         int filenameLength;
         int filesize;
         int readBytes;
@@ -165,9 +259,11 @@ public class TransferHelper implements Runnable {
         FileOutputStream fileOutputStream;
         File outputFile;
 
+
         try {
             //Read filename length
             filenameLength = dis.readInt();
+
 
             //Read filename
             for (int i = 0; i < filenameLength; i++) {
@@ -177,6 +273,7 @@ public class TransferHelper implements Runnable {
             //Read filesize
             filesize = dis.readInt();
 
+
             //Receive and read bytes
             while (totalBytes < filesize) {
                 readBytes = bis.read(buffer);
@@ -184,16 +281,21 @@ public class TransferHelper implements Runnable {
                 totalBytes += readBytes;
             }
 
+            buffer = outputStream.toByteArray();
+
+
             //Write buffer to file
-            if (buffer.length == filesize) {
+            if (totalBytes == filesize) {
                 try {
                     outputFile = new File("files/" + filename.toString());
                     outputFile.createNewFile();
                     fileOutputStream = new FileOutputStream(outputFile);
                     fileOutputStream.write(buffer);
                 } catch (IOException e) {
+                    e.printStackTrace();
                     //TODO handle
                 }
+
             } else {
                 //TODO handle
             }
@@ -202,9 +304,11 @@ public class TransferHelper implements Runnable {
             e.printStackTrace();
         }
 
-
-
-
-
+        try {
+            socket.close();
+            listener.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

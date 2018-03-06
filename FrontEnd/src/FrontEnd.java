@@ -128,10 +128,8 @@ public class FrontEnd implements FrontEndInterface {
 
         availableServers = checkStatus();
 
-        //Get the AVAILABLE servers, their filelists, and the files within these filelists
+        //Get the AVAILABLE servers
         listOfAvailableServers = availableServers.getServers();
-        listOfAllAvailableFileLists = availableServers.getFileLists();
-        listOfListOfAllAvailableFiles = getCorrectFiles(listOfAllAvailableFileLists);
 
         //Get all the servers, their filelists, and the files within these filelists
         listOfAllServers = new ArrayList<>(Arrays.asList(server1, server2, server3));
@@ -142,9 +140,12 @@ public class FrontEnd implements FrontEndInterface {
         //If it exists on a server that is not up, delete it from its file list, which will then be processed when
         //the server next comes online by the updateServers() method
         if (exists) {
+            System.out.println("File exists");
             for (int i = 0; i < 3; i++) {
                 if (listOfListOfAllFiles.get(i).contains(filename)) {
+                    System.out.println("Server: " + Integer.toString(i) + " contains file");
                     if (listOfAvailableServers.contains(listOfAllServers.get(i))) {
+                        System.out.println("This should execute");
                         try {
                             listOfAllServers.get(i).delete(filename);
                         } catch (RemoteException e) {
@@ -152,15 +153,24 @@ public class FrontEnd implements FrontEndInterface {
                             //TODO handle this exception
                         }
                     }
+                    System.out.println(listOfListOfAllFiles);
                     removeFileFromList(listOfAllFileLists.get(i), listOfListOfAllFiles.get(i), filename);
                 }
             }
         }
 
-        //TODO: handle no servers available - send back to client, delete files from front end.
+        //Get the filelists, and the files within these filelists, of the AVAILABLE servers
+        listOfAllAvailableFileLists = availableServers.getFileLists();
+        listOfListOfAllAvailableFiles = getCorrectFiles(listOfAllAvailableFileLists);
 
-        if (reliable) {
-            //Handle multiple file upload using multiple threads, with the case if we are needing to overwrite
+        System.out.println();
+        //TODO: handle no servers available - send back to client
+
+        //Send the file to the server(s), depending on whether or not the client specified it as a reliable
+        //upload. Each upload is done using a separate thread, each using its own socket, running in parallel
+
+        if (reliable) { //TODO handle DUPLICATES file
+            //Handle case where file is sent to all available servers
             for (int i = 0; i < listOfAvailableServers.size(); i++) {
                 sendToServer(listOfAvailableServers.get(i), filename, 9091 + i);
                 addFileToList(listOfAllAvailableFileLists.get(i), listOfListOfAllAvailableFiles.get(i), filename);
@@ -170,6 +180,8 @@ public class FrontEnd implements FrontEndInterface {
             for (int i = 0; i < listOfAvailableServers.size(); i++) {
                 try {
                     numFiles = listOfAvailableServers.get(i).numFiles();
+                    System.out.println("Server: " + Integer.toString(i));
+                    System.out.println("No. of files on Server: " + Integer.toString(numFiles));
 
                     if (numFiles < minimum) {
                         minimum = numFiles;
@@ -189,74 +201,35 @@ public class FrontEnd implements FrontEndInterface {
     }
 
     public void sendToServer(ServerInterface server, String filename, int port) {
-        int readBytes;
-        byte[] buffer;
-        File downloadFile;
-        ByteArrayOutputStream byteOutputStream;
-        BufferedInputStream bfis;
-        DataOutputStream dos;
-        BufferedOutputStream bos;
-        Socket socket;
-
-        //Calls the remote upload function, which tells the front end to open a remote connection
-        //This step ensures the front ends listener socket is open before we try connect to it
         try {
-            if (!server.upload(port)) {
+            //Calls server receive function, which starts a new thread and open a socket to connect to
+            if (!server.receive(port)) {
                 System.out.println("[-] No upload servers available, ");
             }
+
+            //Create a new thread for the front end to push the file from the front end to the server
+            TransferHelper uploader = new TransferHelper(server.getIpAddress(), port, filename, "P");
+            Thread thread = new Thread(uploader);
+            thread.run();
+
         } catch (RemoteException e) {
+            //TODO handle
             e.printStackTrace();
-        }
-
-        try {
-            //Create the socket connection to handle the file transfer (only)
-            socket = new Socket(server.getIpAddress(), 9091);
-
-            //Create output streams
-            dos = new DataOutputStream(socket.getOutputStream());
-            bos = new BufferedOutputStream(socket.getOutputStream());
-
-
-            //Check file exists
-            if (new File("files/" + filename).isFile()) {
-                downloadFile = new File(filename);
-                bfis = new BufferedInputStream(new FileInputStream(downloadFile));
-                byteOutputStream = new ByteArrayOutputStream();
-
-                buffer = new byte[1024];
-
-                //Read file into buffer
-                while ((readBytes = bfis.read(buffer)) > 0) {
-                    byteOutputStream.write(buffer, 0, readBytes);
-                }
-            } else {
-                //TODO handle this case that somehow the file uploaded to the front end can't be found
-                return;
-            }
-
-            //Send filename length and filename
-            dos.writeInt(filename.length());
-            dos.writeChars(filename);
-            dos.flush();
-
-            //Send file size
-            buffer = byteOutputStream.toByteArray();
-            dos.writeInt(buffer.length);
-
-            //Send file
-            bos.write(buffer, 0, buffer.length);
-            bos.flush();
-
-            socket.close();
-        } catch (IOException e) {
-            //TODO
         }
     }
 
     public void removeFileFromList(File filelist, ArrayList<String> files, String fileToRemove) {
         try {
+            System.out.println("Contents of file:");
+            BufferedReader reader = new BufferedReader(new FileReader(filelist));
+            System.out.println(reader.readLine());
+
             files.remove(fileToRemove);
-            FileWriter writer = new FileWriter(filelist);
+            System.out.print("What to write to file ");
+            System.out.println(files);
+            FileWriter writer = new FileWriter(filelist, false);
+
+            writer.write("");
 
             for (String file : files) {
                 writer.write(file + "\n");

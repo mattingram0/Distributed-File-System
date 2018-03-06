@@ -14,13 +14,11 @@ public interface ServerInterface extends Remote {
 
     void delete(String filename) throws RemoteException;
 
-    int checkSpace() throws RemoteException;
-
     ArrayList<String> list() throws RemoteException;
 
     void download() throws RemoteException;
 
-    boolean upload(int port) throws RemoteException;
+    boolean receive(int port) throws RemoteException;
 
     String getIpAddress() throws RemoteException;
 }

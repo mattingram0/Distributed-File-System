@@ -232,7 +232,7 @@ public class Client {
                 downloadTime = (endTime - startTime) / 1000000;
 
                 //If the correct number of bytes were received, write the file
-                if (buffer.length == filesize) {
+                if (totalBytes == filesize) {
                     if (new File(filename).isFile()) {
                         System.out.println("[*] File already exists locally, overwrite? (y/n)");
                         System.out.print("> ");
@@ -282,7 +282,7 @@ public class Client {
         float endTime;
         float uploadTime;
         boolean reliable;
-        boolean exists;
+        boolean exists = false;
 
         //Get filename
         try {
@@ -432,7 +432,7 @@ public class Client {
                 System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
 
                 //If the upload to the front end was successful, push the uploads to the other servers.
-                //TODO change this back: frontEnd.push(filename, exists, reliable);
+                frontEnd.push(filename, exists, reliable);
             } else {
                 System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
             }
