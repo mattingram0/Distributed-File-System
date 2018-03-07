@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -41,7 +42,16 @@ public class TransferHelper implements Runnable {
 
         if (type.equals("P")) {
             try {
-                socket = new Socket(host, port);
+                System.out.println("port: " + Integer.toString(port));
+                while (true) {
+                    try {
+                        socket = new Socket(host, port);
+                    } catch (ConnectException c) {
+                        continue;
+                    }
+                    break;
+                }
+
                 push();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -49,6 +59,7 @@ public class TransferHelper implements Runnable {
         } else {
             try {
                 listener = new ServerSocket(port);
+                System.out.println("listener created on: " + Integer.toString(port));
 
                 socket = listener.accept();
                 dis = new DataInputStream(socket.getInputStream());
@@ -203,10 +214,10 @@ public class TransferHelper implements Runnable {
                 //TODO handle this case that somehow the file uploaded to the front end can't be found
                 try {
                     socket.close();
-                    listener.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                System.out.println("file deleted from front end");
                 return;
             }
 
@@ -226,9 +237,9 @@ public class TransferHelper implements Runnable {
             socket.close();
 
             //As multiple threads may be using the same file, all will run until last one using it deletes file
-            while (uploadFile.exists()) {
-                uploadFile.delete();
-            }
+//            while (uploadFile.exists()) {
+//                uploadFile.delete();
+//            }
 
         } catch (IOException e) {
             try {

@@ -5,10 +5,7 @@ import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
+import java.util.*;
 
 public class Client {
 
@@ -266,6 +263,13 @@ public class Client {
     }
 
     public void delete(Scanner scanner) throws TransferException {
+        String filename;
+
+        System.out.println("[*] Please enter filename to upload");
+        System.out.print("> ");
+        filename = scanner.nextLine();
+
+        frontEnd.delete(filename);
     }
 
     public void upload(Scanner scanner) throws TransferException {
@@ -446,7 +450,7 @@ public class Client {
     }
 
     public void list() {
-        ArrayList<ArrayList<String>> listing;
+        Set<String> listing;
 
         try {
             listing = frontEnd.list();
@@ -454,10 +458,8 @@ public class Client {
             if (listing == null) {
                 System.out.println("[-] Server error, unable to retrieve directory listing");
             } else {
-                for (ArrayList<String> list : listing) {
-                    for (String file : list) {
-                        System.out.println(file); //TODO: TEST
-                    }
+                for (String file : listing) {
+                    System.out.println(file); //TODO: TEST
                 }
             }
         } catch (RemoteException e) {

@@ -7,9 +7,7 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.util.*;
 
 public class FrontEnd implements FrontEndInterface {
 
@@ -20,7 +18,6 @@ public class FrontEnd implements FrontEndInterface {
     ArrayList<ServerInterface> upServers = new ArrayList<>();
     boolean changedState = false; //Set to true when a server fails or comes back, to recheck files
 
-    File duplicates;
     File fileList1;
     File fileList2;
     File fileList3;
@@ -42,10 +39,7 @@ public class FrontEnd implements FrontEndInterface {
             FrontEnd frontEnd = new FrontEnd();
             Registry registry = LocateRegistry.getRegistry("127.0.0.1", 38048);
 
-            //Create text documents holding the files that should exist on each server, and a separate doc for duplicates
-            if (!(frontEnd.duplicates = new File("duplicates.txt")).exists()) {
-                frontEnd.duplicates.createNewFile();
-            }
+            //Create text documents holding the files that should exist on each server
             if (!(frontEnd.fileList1 = new File("server1.txt")).exists()) {
                 frontEnd.fileList1.createNewFile();
             }
@@ -70,14 +64,14 @@ public class FrontEnd implements FrontEndInterface {
     public boolean upload(int port, String filename, boolean reliable) {
         ServerList availableServers;
         ArrayList<ServerInterface> listOfServers;
-        ArrayList<File> listOfFileLists;
-        ArrayList<ArrayList<String>> listOfCorrectFilesOnServer;
+        ArrayList<File> listOfAllFileLists;
+        ArrayList<ArrayList<String>> listOfListOfAllFiles;
         boolean exists = false;
 
         availableServers = checkStatus();
         listOfServers = availableServers.getServers();
-        listOfFileLists = availableServers.getFileLists();
-        listOfCorrectFilesOnServer = getCorrectFiles(listOfFileLists);
+        listOfAllFileLists = new ArrayList<>(Arrays.asList(fileList1, fileList2, fileList3));
+        listOfListOfAllFiles = getCorrectFiles(listOfAllFileLists);
 
         //Ensure there are servers available
         if (listOfServers.size() == 0) {
@@ -90,7 +84,7 @@ public class FrontEnd implements FrontEndInterface {
         }
 
         //Check to see if filename exists on any of the servers:
-        for (ArrayList<String> filesOnServer : listOfCorrectFilesOnServer) {
+        for (ArrayList<String> filesOnServer : listOfListOfAllFiles) {
             if (filesOnServer.contains(filename)) {
                 exists = true;
             }
@@ -264,14 +258,12 @@ public class FrontEnd implements FrontEndInterface {
         ArrayList<ArrayList<String>> listOfCorrectFilesOnServer;    //An arraylist containing the list of files that should be on the server, for each server
         ArrayList<String> actualFilesOnServer;                      //A list containing the files actually on the server
         ArrayList<ArrayList<String>> listOfActualFilesOnServer;     //An arraylist containing the list of files actually on the server, for each server
-        ArrayList<String> duplicateFiles;                           //An arraylist containing all files that should be on every server
 
         listOfServers = availableServers.getServers();
         listOfFileLists = availableServers.getFileLists();
 
         listOfActualFilesOnServer = getActualFiles(listOfServers);
         listOfCorrectFilesOnServer = getCorrectFiles(listOfFileLists);
-        duplicateFiles = getDuplicateFiles();
 
         for (int i = 0; i < listOfActualFilesOnServer.size(); i++) {
             actualFilesOnServer = listOfActualFilesOnServer.get(i);
@@ -279,7 +271,7 @@ public class FrontEnd implements FrontEndInterface {
             server = listOfServers.get(i);
 
             for (String file : actualFilesOnServer) {
-                if (!correctFilesOnServer.contains(file) && !duplicateFiles.contains(file)) {
+                if (!correctFilesOnServer.contains(file)) {
                     try {
                         server.delete(file);
                     } catch (RemoteException e) {
@@ -292,10 +284,12 @@ public class FrontEnd implements FrontEndInterface {
         changedState = false;
     }
 
-    public ArrayList<ArrayList<String>> list() { //TODO: add duplicates?
+    public Set<String> list() { //TODO: add duplicates?
         ServerList availableServers = checkStatus();
-        ArrayList<ArrayList<String>> listing;
+        ArrayList<ArrayList<String>> listOfLists;
+        Set<String> listing = new HashSet<>();
         ArrayList<ServerInterface> servers = availableServers.getServers();
+        ArrayList<File> filelists = availableServers.getFileLists();
         if (servers.size() == 0) {
             return null;
         }
@@ -304,29 +298,15 @@ public class FrontEnd implements FrontEndInterface {
         if (changedState) {
             updateServers(availableServers);
         }
-        listing = getActualFiles(servers);
-        listing.add(getDuplicateFiles());
-        return listing;
 
-    }
+        listOfLists = getCorrectFiles(filelists);
 
-    private ArrayList<String> getDuplicateFiles() {
-        ArrayList<String> duplicateFiles = new ArrayList<>();
-        String line;
-        BufferedReader reader;
-
-        //Read in the duplicate files
-        try {
-            reader = new BufferedReader(new FileReader(duplicates));
-
-            while ((line = reader.readLine()) != null) {
-                duplicateFiles.add(line);
+        for (ArrayList<String> list : listOfLists) {
+            for (String file : list) {
+                listing.add(file);
             }
-        } catch (IOException e) {
-            //TODO
         }
-
-        return duplicateFiles;
+        return listing;
     }
 
     public ArrayList<ArrayList<String>> getActualFiles(ArrayList<ServerInterface> servers) {
@@ -379,7 +359,6 @@ public class FrontEnd implements FrontEndInterface {
                     }
 
                     listing.add(filesOnServer);
-
                 } catch (IOException e) {
                     System.out.println("[-] Error when reading filelists");
                     counter++;
