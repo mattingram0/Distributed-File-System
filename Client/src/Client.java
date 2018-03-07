@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -198,7 +199,6 @@ public class Client {
             if (filesize != -1) {
 
                 startTime = System.nanoTime();
-
                 //Read the bytes from the socket, displaying a progress bar
                 while (bytesRemaining > 0) {
                     percentage = 100 * ((float) totalBytes / (float) filesize);
@@ -336,7 +336,14 @@ public class Client {
 
         try {
             //Create the socket connection to handle the file transfer (only)
-            this.socket = new Socket(host, 9090);
+            while (true) {
+                try {
+                    socket = new Socket(host, 9090);
+                } catch (ConnectException c) {
+                    continue;
+                }
+                break;
+            }
 
             //Create the input and output streams for file transfer
             dis = new DataInputStream(socket.getInputStream());
