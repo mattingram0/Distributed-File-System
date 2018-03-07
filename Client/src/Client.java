@@ -103,24 +103,14 @@ class Client {
 
                 case "DWLD":
                     if (client.connected) {
-                        try {
-                            client.download(scanner);
-                        } catch (TransferException e) {
-                            System.out.println("[-] " + e.getMessage());
-                            System.out.println();
-                        }
+                        client.download(scanner);
                     } else {
                         System.out.println("[-] Not connected to a server! Please use CONN to connect to a fileserver \n");
                     }
                     break;
                 case "DELF":
                     if (client.connected) {
-                        try {
-                            client.delete(scanner);
-                        } catch (TransferException e) {
-                            System.out.println("[-] " + e.getMessage());
-                            System.out.println();
-                        }
+                        client.delete(scanner);
                     } else {
                         System.out.println("[-] Not connected to a server! Please use CONN to connect to a fileserver \n");
                     }
@@ -183,9 +173,20 @@ class Client {
             System.out.print("> ");
             filename = scanner.nextLine();
 
+            if (new File(filename).isFile()) {
+                System.out.println("[*] File already exists locally, overwrite? (y/n)");
+                System.out.print("> ");
+
+                //Check for overwrites
+                if (!yesNo(scanner)) {
+                    System.out.println("[-] Download abandoned by the user\n");
+                    return;
+                }
+            }
+
             //Call the remote download method
             try {
-                if (!frontEnd.download(filename)) {
+                if (!frontEnd.download(9090, filename)) {
                     System.out.println("[-] Unable to download file from server");
                     return;
                 }
@@ -237,25 +238,10 @@ class Client {
 
                 //If the correct number of bytes were received, write the file
                 if (totalBytes == filesize) {
-                    if (new File(filename).isFile()) {
-                        System.out.println("[*] File already exists locally, overwrite? (y/n)");
-                        System.out.print("> ");
-
-                        //Check for overwrites
-                        if (yesNo(scanner)) {
-                            fileOutputStream = new FileOutputStream(filename);
-                            fileOutputStream.write(buffer);
-                            System.out.println("[+] " + filename + " successfully downloaded - " + Integer.toString(totalBytes) + " bytes received in " + Float.toString(downloadTime) + "ms\n");
-                        } else {
-                            System.out.println("[-] Download abandoned by the user\n");
-                        }
-                    } else {
-                        fileOutputStream = new FileOutputStream(filename);
-                        fileOutputStream.write(buffer);
-                        System.out.println("[+] " + filename + " successfully downloaded: " + Integer.toString(totalBytes) + " bytes received in " + Float.toString(downloadTime) + "ms\n");
-                    }
-                    //Incorrect number of bytes received
-                } else {
+                    fileOutputStream = new FileOutputStream(filename);
+                    fileOutputStream.write(buffer);
+                    System.out.println("[+] " + filename + " successfully downloaded - " + Integer.toString(totalBytes) + " bytes received in " + Float.toString(downloadTime) + "ms\n");
+                } else { //Incorrect number of bytes received
                     System.out.println("[-] " + filename + " not successfully downloaded: " + Integer.toString(buffer.length) + "/" + Integer.toString(totalBytes) + " bytes received in" + Float.toString(downloadTime) + "ms\n");
                 }
 

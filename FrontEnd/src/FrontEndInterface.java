@@ -15,6 +15,6 @@ interface FrontEndInterface extends Remote {
 
     boolean delete(String filename) throws RemoteException, FileNotFoundException;
 
-    boolean download(String filename) throws RemoteException, FileNotFoundException;
+    boolean download(int port, String filename) throws RemoteException, FileNotFoundException;
 
 }

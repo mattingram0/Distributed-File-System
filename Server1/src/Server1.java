@@ -38,9 +38,8 @@ public class Server1 implements ServerInterface {
     }
 
     public boolean download(int port) {
-        TransferHelper helper = new TransferHelper(port, "S");
-        Thread thread = new Thread(helper);
-        thread.start();
+        TransferHelper helper = new TransferHelper(port, "D");
+        helper.run();
         return true;
     }
 

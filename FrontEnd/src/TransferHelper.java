@@ -42,7 +42,6 @@ class TransferHelper implements Runnable {
 
         if (type.equals("P")) {
             try {
-                System.out.println("port: " + Integer.toString(port));
                 while (true) {
                     try {
                         socket = new Socket(host, port);
@@ -53,6 +52,21 @@ class TransferHelper implements Runnable {
                 }
 
                 push();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else if (type.equals("G")) {
+            try {
+                while (true) {
+                    try {
+                        socket = new Socket(host, port);
+                    } catch (ConnectException c) {
+                        continue;
+                    }
+                    break;
+                }
+
+                receive();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -69,7 +83,7 @@ class TransferHelper implements Runnable {
                 if (type.equals("U")) {
                     upload();
                 } else if (type.equals("D")) {
-                    download();
+                    push();
                 } else if (type.equals("R")) {
                     receive();
                 } else {
@@ -293,7 +307,6 @@ class TransferHelper implements Runnable {
             }
 
             buffer = outputStream.toByteArray();
-
 
             //Write buffer to file
             if (totalBytes == filesize) {

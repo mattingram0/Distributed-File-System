@@ -60,7 +60,7 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public boolean download(String filename) throws FileNotFoundException {
+    public boolean download(int port, String filename) throws FileNotFoundException {
         ServerInterface server = null;
         ServerList availableServers;
         ArrayList<ServerInterface> listOfServers;
@@ -93,10 +93,18 @@ public class FrontEnd implements FrontEndInterface {
 
         if (exists) {
             try {
-                if (server.download(9090)) {
-                    TransferHelper getter = new TransferHelper(server.getIpAddress(), 9090, filename, "G");
-                    Thread thread = new Thread(getter);
-                    thread.run();
+
+                //Do the downloading sequentially - the specification states that all communication between client and server has to go through the front end
+                //so I didn't want to risk directly opening a socket connection between client and server and lose marks. Therefore the front end retrieves the file
+                //from the server and then sends it on to the client.
+                if (server.download(9091)) {
+                    TransferHelper getter = new TransferHelper(server.getIpAddress(), 9091, filename, "G");
+                    getter.run();
+
+                    TransferHelper downloader = new TransferHelper(port, "D");
+                    Thread thread = new Thread(downloader);
+                    thread.start();
+
                 } else {
                     return false;
                 }
@@ -297,7 +305,7 @@ public class FrontEnd implements FrontEndInterface {
             //Create a new thread for the front end to push the file from the front end to the server
             TransferHelper uploader = new TransferHelper(server.getIpAddress(), port, filename, "P");
             Thread thread = new Thread(uploader);
-            thread.run();
+            thread.start();
 
         } catch (RemoteException e) {
             //TODO handle
