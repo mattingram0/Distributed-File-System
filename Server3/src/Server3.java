@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 public class Server3 implements ServerInterface {
 
-    String ip; //IP address this server is running on, to allow for socket creation
+    private String ip; //IP address this server is running on, to allow for socket creation
 
     @Override
     public String getIpAddress() {
@@ -37,7 +37,12 @@ public class Server3 implements ServerInterface {
         return listing;
     }
 
-    public void download() throws RemoteException {
+    public boolean download(int port, String filename) {
+        TransferHelper helper = new TransferHelper(port, "D", filename);
+        Thread thread = new Thread(helper);
+        thread.start();
+        System.out.println("download listener started on server");
+        return true;
     }
 
     public boolean receive(int port) {
@@ -48,7 +53,7 @@ public class Server3 implements ServerInterface {
     }
 
 
-    public void delete(String filename) throws RemoteException {
+    public void delete(String filename) {
         if (new File("files/" + filename).delete()) {
             System.out.println("[+] " + filename + " deleted successfully from Server3");
         } else {

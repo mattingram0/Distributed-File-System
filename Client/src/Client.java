@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -7,7 +8,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.*;
 
-public class Client {
+class Client {
 
     private Socket socket;
     private boolean connected = false;
@@ -17,8 +18,8 @@ public class Client {
     private BufferedOutputStream bos;
     private String host;
     private int port;
-    FrontEndInterface frontEnd;
-    Registry registry;
+    private FrontEndInterface frontEnd;
+    private Registry registry;
 
     private Client() {
     }
@@ -102,24 +103,14 @@ public class Client {
 
                 case "DWLD":
                     if (client.connected) {
-                        try {
-                            client.download(scanner);
-                        } catch (TransferException e) {
-                            System.out.println("[-] " + e.getMessage());
-                            System.out.println();
-                        }
+                        client.download(scanner);
                     } else {
                         System.out.println("[-] Not connected to a server! Please use CONN to connect to a fileserver \n");
                     }
                     break;
                 case "DELF":
                     if (client.connected) {
-                        try {
-                            client.delete(scanner);
-                        } catch (TransferException e) {
-                            System.out.println("[-] " + e.getMessage());
-                            System.out.println();
-                        }
+                        client.delete(scanner);
                     } else {
                         System.out.println("[-] Not connected to a server! Please use CONN to connect to a fileserver \n");
                     }
@@ -140,12 +131,12 @@ public class Client {
         }
     }
 
-    public boolean checkConnected() {
+    private boolean checkConnected() {
         return true;
         //TODO
     }
 
-    public boolean yesNo(Scanner scanner) {
+    private boolean yesNo(Scanner scanner) {
         String input = scanner.nextLine().toLowerCase();
 
         while (!input.equals("y") && !input.equals("n")) {
@@ -157,11 +148,11 @@ public class Client {
         return input.equals("y");
     }
 
-    public void closeConnection() {
+    private void closeConnection() {
 
     }
 
-    public void download(Scanner scanner) throws TransferException {
+    private void download(Scanner scanner) {
         String filename;
         String progressBar;
         int filesize;
@@ -177,14 +168,52 @@ public class Client {
         float downloadTime;
 
         try {
-            //Send command
-            dos.writeChars("DWLD"); //TODO BISBOS
-            dos.flush();
-
             //Get filename
             System.out.println("[*] Please enter filename to download");
             System.out.print("> ");
             filename = scanner.nextLine();
+
+            if (new File(filename).isFile()) {
+                System.out.println("[*] File already exists locally, overwrite? (y/n)");
+                System.out.print("> ");
+
+                //Check for overwrites
+                if (!yesNo(scanner)) {
+                    System.out.println("[-] Download abandoned by the user\n");
+                    return;
+                }
+            }
+
+            //Call the remote download method
+            try {
+                if (!frontEnd.download(9090, filename)) {
+                    System.out.println("[-] Unable to download file from server");
+                    return;
+                }
+            } catch (FileNotFoundException e) {
+                System.out.println("[-] File does not exist on server");
+                return;
+            }
+
+            try {
+                //Create the socket connection to handle the file transfer (only)
+                while (true) {
+                    try {
+                        socket = new Socket(host, 9090);
+                    } catch (ConnectException c) {
+                        continue;
+                    }
+                    break;
+                }
+
+                //Create the input and output streams for file transfer
+                dis = new DataInputStream(socket.getInputStream());
+                dos = new DataOutputStream(socket.getOutputStream());
+                bis = new BufferedInputStream(socket.getInputStream());
+                bos = new BufferedOutputStream(socket.getOutputStream());
+            } catch (IOException e) {
+                //TODO proper error handling
+            }
 
             //Send filename length and filename, receive filesize
             dos.writeInt(filename.length());
@@ -198,7 +227,6 @@ public class Client {
             if (filesize != -1) {
 
                 startTime = System.nanoTime();
-
                 //Read the bytes from the socket, displaying a progress bar
                 while (bytesRemaining > 0) {
                     percentage = 100 * ((float) totalBytes / (float) filesize);
@@ -230,25 +258,10 @@ public class Client {
 
                 //If the correct number of bytes were received, write the file
                 if (totalBytes == filesize) {
-                    if (new File(filename).isFile()) {
-                        System.out.println("[*] File already exists locally, overwrite? (y/n)");
-                        System.out.print("> ");
-
-                        //Check for overwrites
-                        if (yesNo(scanner)) {
-                            fileOutputStream = new FileOutputStream(filename);
-                            fileOutputStream.write(buffer);
-                            System.out.println("[+] " + filename + " successfully downloaded - " + Integer.toString(totalBytes) + " bytes received in " + Float.toString(downloadTime) + "ms\n");
-                        } else {
-                            System.out.println("[-] Download abandoned by the user\n");
-                        }
-                    } else {
-                        fileOutputStream = new FileOutputStream(filename);
-                        fileOutputStream.write(buffer);
-                        System.out.println("[+] " + filename + " successfully downloaded: " + Integer.toString(totalBytes) + " bytes received in " + Float.toString(downloadTime) + "ms\n");
-                    }
-                    //Incorrect number of bytes received
-                } else {
+                    fileOutputStream = new FileOutputStream(filename);
+                    fileOutputStream.write(buffer);
+                    System.out.println("[+] " + filename + " successfully downloaded - " + Integer.toString(totalBytes) + " bytes received in " + Float.toString(downloadTime) + "ms\n");
+                } else { //Incorrect number of bytes received
                     System.out.println("[-] " + filename + " not successfully downloaded: " + Integer.toString(buffer.length) + "/" + Integer.toString(totalBytes) + " bytes received in" + Float.toString(downloadTime) + "ms\n");
                 }
 
@@ -262,17 +275,27 @@ public class Client {
         }
     }
 
-    public void delete(Scanner scanner) throws TransferException {
+    private void delete(Scanner scanner) {
         String filename;
 
-        System.out.println("[*] Please enter filename to upload");
+        System.out.println("[*] Please enter filename to delete");
         System.out.print("> ");
         filename = scanner.nextLine();
 
-        frontEnd.delete(filename);
+        try {
+            if (frontEnd.delete(filename)) {
+                System.out.println("[+] File deleted successfully");
+            } else {
+                throw new RemoteException();
+            }
+        } catch (RemoteException e) {
+            System.out.println("[-] Server error whilst deleting file, file not deleted");
+        } catch (FileNotFoundException f) {
+            System.out.println("[-] File does not exist on the server");
+        }
     }
 
-    public void upload(Scanner scanner) throws TransferException {
+    private void upload(Scanner scanner) throws TransferException {
         String filename;
         String progressBar;
         ByteArrayOutputStream byteOutputStream;
@@ -326,7 +349,14 @@ public class Client {
 
         try {
             //Create the socket connection to handle the file transfer (only)
-            this.socket = new Socket(host, 9090);
+            while (true) {
+                try {
+                    socket = new Socket(host, 9090);
+                } catch (ConnectException c) {
+                    continue;
+                }
+                break;
+            }
 
             //Create the input and output streams for file transfer
             dis = new DataInputStream(socket.getInputStream());
@@ -334,7 +364,7 @@ public class Client {
             bis = new BufferedInputStream(socket.getInputStream());
             bos = new BufferedOutputStream(socket.getOutputStream());
         } catch (IOException e) {
-
+            //TODO proper error handling
         }
 
         try {
@@ -449,7 +479,7 @@ public class Client {
         System.out.println("");
     }
 
-    public void list() {
+    private void list() {
         Set<String> listing;
 
         try {
@@ -467,7 +497,7 @@ public class Client {
         }
     }
 
-    public void connect(Scanner scanner) throws InputException {
+    private void connect(Scanner scanner) throws InputException {
 
         System.out.println("[*] Please enter a hostname or IP address to connect to: ");
         System.out.print("> ");
@@ -501,18 +531,18 @@ public class Client {
         }
     }
 
-    public boolean quit(Scanner scanner) {
+    private boolean quit(Scanner scanner) {
         return true;
     }
 
-    public void printCommands() {
+    private void printCommands() {
         System.out.println("[*] Please input an operation:\n" + "CONN - Connect to a Server\n" +
                 "UPLD - Upload a File\n" + "LIST - List files on the Server\n" + "DWLD - Download a File\n" +
                 "DELF - Delete a File\n" + "QUIT - Exit the Server\n" + "HELP - Detailed help on the commands\n" +
                 "'>>>' denotes the client is ready for a command, '>' denotes the client is waiting for user input\n");
     }
 
-    public String getCommand(Scanner scanner) {
+    private String getCommand(Scanner scanner) {
         System.out.print(">>> ");
         return scanner.nextLine();
     }
