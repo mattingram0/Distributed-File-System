@@ -8,7 +8,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.*;
 
-public class Client {
+class Client {
 
     private Socket socket;
     private boolean connected = false;
@@ -18,8 +18,8 @@ public class Client {
     private BufferedOutputStream bos;
     private String host;
     private int port;
-    FrontEndInterface frontEnd;
-    Registry registry;
+    private FrontEndInterface frontEnd;
+    private Registry registry;
 
     private Client() {
     }
@@ -141,12 +141,12 @@ public class Client {
         }
     }
 
-    public boolean checkConnected() {
+    private boolean checkConnected() {
         return true;
         //TODO
     }
 
-    public boolean yesNo(Scanner scanner) {
+    private boolean yesNo(Scanner scanner) {
         String input = scanner.nextLine().toLowerCase();
 
         while (!input.equals("y") && !input.equals("n")) {
@@ -158,11 +158,11 @@ public class Client {
         return input.equals("y");
     }
 
-    public void closeConnection() {
+    private void closeConnection() {
 
     }
 
-    public void download(Scanner scanner) throws TransferException {
+    private void download(Scanner scanner) {
         String filename;
         String progressBar;
         int filesize;
@@ -178,14 +178,21 @@ public class Client {
         float downloadTime;
 
         try {
-            //Send command
-            dos.writeChars("DWLD"); //TODO BISBOS
-            dos.flush();
-
             //Get filename
             System.out.println("[*] Please enter filename to download");
             System.out.print("> ");
             filename = scanner.nextLine();
+
+            //Call the remote download method
+            try {
+                if (!frontEnd.download(filename)) {
+                    System.out.println("[-] Unable to download file from server");
+                    return;
+                }
+            } catch (FileNotFoundException e) {
+                System.out.println("[-] File does not exist on server");
+                return;
+            }
 
             //Send filename length and filename, receive filesize
             dos.writeInt(filename.length());
@@ -262,7 +269,7 @@ public class Client {
         }
     }
 
-    public void delete(Scanner scanner) throws TransferException {
+    private void delete(Scanner scanner) {
         String filename;
 
         System.out.println("[*] Please enter filename to delete");
@@ -282,7 +289,7 @@ public class Client {
         }
     }
 
-    public void upload(Scanner scanner) throws TransferException {
+    private void upload(Scanner scanner) throws TransferException {
         String filename;
         String progressBar;
         ByteArrayOutputStream byteOutputStream;
@@ -466,7 +473,7 @@ public class Client {
         System.out.println("");
     }
 
-    public void list() {
+    private void list() {
         Set<String> listing;
 
         try {
@@ -484,7 +491,7 @@ public class Client {
         }
     }
 
-    public void connect(Scanner scanner) throws InputException {
+    private void connect(Scanner scanner) throws InputException {
 
         System.out.println("[*] Please enter a hostname or IP address to connect to: ");
         System.out.print("> ");
@@ -518,18 +525,18 @@ public class Client {
         }
     }
 
-    public boolean quit(Scanner scanner) {
+    private boolean quit(Scanner scanner) {
         return true;
     }
 
-    public void printCommands() {
+    private void printCommands() {
         System.out.println("[*] Please input an operation:\n" + "CONN - Connect to a Server\n" +
                 "UPLD - Upload a File\n" + "LIST - List files on the Server\n" + "DWLD - Download a File\n" +
                 "DELF - Delete a File\n" + "QUIT - Exit the Server\n" + "HELP - Detailed help on the commands\n" +
                 "'>>>' denotes the client is ready for a command, '>' denotes the client is waiting for user input\n");
     }
 
-    public String getCommand(Scanner scanner) {
+    private String getCommand(Scanner scanner) {
         System.out.print(">>> ");
         return scanner.nextLine();
     }

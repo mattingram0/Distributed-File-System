@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 public class Server1 implements ServerInterface {
 
-    String ip; //IP address this server is running on, to allow for socket creation
+    private String ip; //IP address this server is running on, to allow for socket creation TODO: fix/set this, commandline?
 
     @Override
     public String getIpAddress() {
@@ -23,7 +23,7 @@ public class Server1 implements ServerInterface {
         return list().size();
     }
 
-    public void ping() throws RemoteException {
+    public void ping() {
     }
 
     public ArrayList<String> list() {
@@ -37,7 +37,11 @@ public class Server1 implements ServerInterface {
         return listing;
     }
 
-    public void download() throws RemoteException {
+    public boolean download(int port) {
+        TransferHelper helper = new TransferHelper(port, "S");
+        Thread thread = new Thread(helper);
+        thread.start();
+        return true;
     }
 
     public boolean receive(int port) {
@@ -67,9 +71,8 @@ public class Server1 implements ServerInterface {
             //Create front end, add it to registry to be used by clients
             Server1 server1 = new Server1();
             ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(server1, 0);
-            Registry registry = LocateRegistry.getRegistry("127.0.0.1", 38048);
+            Registry registry = LocateRegistry.getRegistry("127.0.0.1", 38048); //TODO add this to client side - change policy files
             registry.rebind("Server1", stub);
-
 
             System.out.println("[+] Server 1 ready on port 38048");
         } catch (Exception e) {

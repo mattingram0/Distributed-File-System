@@ -1,29 +1,29 @@
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.rmi.NotBoundException;
-import java.rmi.Remote;
-import java.rmi.registry.Registry;
-import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class FrontEnd implements FrontEndInterface {
 
-    ServerInterface server1;
-    ServerInterface server2;
-    ServerInterface server3;
+    private ServerInterface server1;
+    private ServerInterface server2;
+    private ServerInterface server3;
 
-    ArrayList<ServerInterface> upServers = new ArrayList<>();
-    boolean changedState = false; //Set to true when a server fails or comes back, to recheck files
+    private ArrayList<ServerInterface> upServers = new ArrayList<>();
+    private boolean changedState = false; //Set to true when a server fails or comes back, to recheck files
 
-    File fileList1;
-    File fileList2;
-    File fileList3;
+    private File fileList1;
+    private File fileList2;
+    private File fileList3;
 
 
-    public FrontEnd() {
+    private FrontEnd() {
     }
 
     public static void main(String args[]) {
@@ -60,7 +60,57 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    //Delete file from all servers
+    public boolean download(String filename) throws FileNotFoundException {
+        ServerInterface server = null;
+        ServerList availableServers;
+        ArrayList<ServerInterface> listOfServers;
+        ArrayList<File> listOfAvailableFileLists;
+        ArrayList<ArrayList<String>> listOfListOfAvailableFiles;
+        boolean exists = false;
+
+        availableServers = checkStatus();
+        listOfServers = availableServers.getServers();
+        listOfAvailableFileLists = availableServers.getFileLists();
+        listOfListOfAvailableFiles = getCorrectFiles(listOfAvailableFileLists);
+
+        //Ensure there are servers available
+        if (listOfServers.size() == 0) {
+            return false;
+        }
+
+        //Update the necessary servers
+        if (changedState) {
+            updateServers(availableServers);
+        }
+
+        //Check to see if filename exists on any of the servers:
+        for (int i = 0; i < listOfListOfAvailableFiles.size(); i++) {
+            if (listOfListOfAvailableFiles.get(i).contains(filename)) {
+                exists = true;
+                server = listOfServers.get(i);
+            }
+        }
+
+        if (exists) {
+            try {
+                if (server.download(9090)) {
+                    TransferHelper getter = new TransferHelper(server.getIpAddress(), 9090, filename, "G");
+                    Thread thread = new Thread(getter);
+                    thread.run();
+                } else {
+                    return false;
+                }
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        } else {
+            throw new FileNotFoundException();
+        }
+
+        return true;
+    }
+
+    //Handles deleting a file from all servers
     public boolean delete(String filename) throws FileNotFoundException {
         ServerList availableServers;
         ArrayList<ServerInterface> listOfServers;
@@ -91,11 +141,7 @@ public class FrontEnd implements FrontEndInterface {
         }
 
         if (exists) {
-            if (remove(filename, listOfServers)) {
-                return true;
-            } else {
-                return false;
-            }
+            return remove(filename, listOfServers);
         } else {
             throw new FileNotFoundException();
         }
@@ -140,10 +186,10 @@ public class FrontEnd implements FrontEndInterface {
         return true;
     }
 
-    //This function deletes the file off all the available servers it exists on, and if it exists
+    //Deletes the file off all the available servers it exists on, and if it exists
     // on a server that is not up, delete it from its file list, which will then be processed when
     //the server next comes online by the updateServers() method
-    public boolean remove(String filename, ArrayList<ServerInterface> listOfAvailableServers) {
+    private boolean remove(String filename, ArrayList<ServerInterface> listOfAvailableServers) {
         ArrayList<ServerInterface> listOfAllServers;
         ArrayList<ArrayList<String>> listOfListOfAllFiles;
         ArrayList<File> listOfAllFileLists;
@@ -171,7 +217,7 @@ public class FrontEnd implements FrontEndInterface {
         return true;
     }
 
-    //Push the files to one or many servers
+    //Handles pushing the files from the front end to one or many servers
     public void push(String filename, boolean exists, boolean reliable) {
         ServerList availableServers;
 
@@ -240,7 +286,8 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public void sendToServer(ServerInterface server, String filename, int port) {
+    //Sends a single file from the front end to a single server
+    private void sendToServer(ServerInterface server, String filename, int port) {
         try {
             //Calls server receive function, which starts a new thread and open a socket to connect to
             if (!server.receive(port)) {
@@ -258,7 +305,8 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public void removeFileFromList(File filelist, ArrayList<String> files, String fileToRemove) {
+    //Remove a file from a specific server filelist
+    private void removeFileFromList(File filelist, ArrayList<String> files, String fileToRemove) {
         try {
             System.out.println("Contents of file:");
             BufferedReader reader = new BufferedReader(new FileReader(filelist));
@@ -281,7 +329,8 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public void addFileToList(File filelist, ArrayList<String> files, String fileToAdd) {
+    //Add a file to a specific server list
+    private void addFileToList(File filelist, ArrayList<String> files, String fileToAdd) {
         try {
             files.add(fileToAdd);
             FileWriter writer = new FileWriter(filelist);
@@ -296,7 +345,8 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public void updateServers(ServerList availableServers) {
+    //Update all the available servers, so that the files on each server coincide with the files in their filelist
+    private void updateServers(ServerList availableServers) {
         ServerInterface server;                                     //A single server
         ArrayList<ServerInterface> listOfServers;                   //An arraylist of available servers
         ArrayList<File> listOfFileLists;                            //An arraylist containing the fileList of each server
@@ -330,6 +380,7 @@ public class FrontEnd implements FrontEndInterface {
         changedState = false;
     }
 
+    //Return a list of unique files on the server
     public Set<String> list() { //TODO: add duplicates?
         ServerList availableServers = checkStatus();
         ArrayList<ArrayList<String>> listOfLists;
@@ -355,7 +406,8 @@ public class FrontEnd implements FrontEndInterface {
         return listing;
     }
 
-    public ArrayList<ArrayList<String>> getActualFiles(ArrayList<ServerInterface> servers) {
+    //Get a list containing lists of all the files currently held on each server
+    private ArrayList<ArrayList<String>> getActualFiles(ArrayList<ServerInterface> servers) {
 
         ArrayList<ArrayList<String>> listing = new ArrayList<>();
         int counter = 0;
@@ -380,7 +432,8 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public ArrayList<ArrayList<String>> getCorrectFiles(ArrayList<File> listOfFileLists) { //TODO: add duplicates???
+    //Get a list containg lists of all the files that should be held on each server
+    private ArrayList<ArrayList<String>> getCorrectFiles(ArrayList<File> listOfFileLists) { //TODO: add duplicates???
         System.out.println(listOfFileLists);
         File fileList;
         String line;
@@ -422,7 +475,8 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
-    public ServerList checkStatus() {
+    //Check to see which servers are online, and if there has been a change of state of any of the servers
+    private ServerList checkStatus() {
 
         ArrayList<ServerInterface> stubs = new ArrayList<>();
         ArrayList<File> fileLists = new ArrayList<>();

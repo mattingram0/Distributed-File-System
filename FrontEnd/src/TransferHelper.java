@@ -3,19 +3,19 @@ import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class TransferHelper implements Runnable {
-    int port;
-    String host;
-    String filename;
-    String type;
-    boolean exists;
-    ServerSocket listener;
-    Socket socket;
+class TransferHelper implements Runnable {
+    private int port;
+    private String host;
+    private String filename;
+    private String type;
+    private boolean exists;
+    private ServerSocket listener;
+    private Socket socket;
     private DataInputStream dis;
     private DataOutputStream dos;
     private BufferedInputStream bis;
 
-    //FrontEnd -> Server
+    //FrontEnd -> Server, Server -> FrontEnd
     TransferHelper(String host, int port, String filename, String type) {
         this.host = host;
         this.port = port;
@@ -82,7 +82,7 @@ public class TransferHelper implements Runnable {
         }
     }
 
-    public void upload() {
+    private void upload() { //TODO change upload and push just to use filename given by client????????
         int filenameLength;
         int filesize;
         int readBytes;
@@ -177,11 +177,11 @@ public class TransferHelper implements Runnable {
         }
     }
 
-    public void download() {
+    private void download() {
 
     }
 
-    public void push() {
+    private void push() {
         int readBytes;
         byte[] buffer;
         File uploadFile;
@@ -258,7 +258,7 @@ public class TransferHelper implements Runnable {
         }
     }
 
-    public void receive() {
+    private void receive() {
 
         int filenameLength;
         int filesize;
