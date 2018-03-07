@@ -97,15 +97,18 @@ public class FrontEnd implements FrontEndInterface {
                 //Do the downloading sequentially - the specification states that all communication between client and server has to go through the front end
                 //so I didn't want to risk directly opening a socket connection between client and server and lose marks. Therefore the front end retrieves the file
                 //from the server and then sends it on to the client.
-                if (server.download(9091)) {
+                if (server.download(9091, filename)) {
+                    System.out.println("exec");
                     TransferHelper getter = new TransferHelper(server.getIpAddress(), 9091, filename, "G");
                     getter.run();
 
-                    TransferHelper downloader = new TransferHelper(port, "D");
+                    TransferHelper downloader = new TransferHelper(port, "D", filename);
                     Thread thread = new Thread(downloader);
                     thread.start();
+                    System.out.println("downloader from fe to client started");
 
                 } else {
+                    System.out.println("tet");
                     return false;
                 }
             } catch (RemoteException e) {
@@ -115,6 +118,7 @@ public class FrontEnd implements FrontEndInterface {
             throw new FileNotFoundException();
         }
 
+        System.out.println("file downloaded to front end correctly, returning to client");
         return true;
     }
 
@@ -299,7 +303,7 @@ public class FrontEnd implements FrontEndInterface {
         try {
             //Calls server receive function, which starts a new thread and open a socket to connect to
             if (!server.receive(port)) {
-                System.out.println("[-] No upload servers available, ");
+                System.out.println("[-] Unable to upload file");
             }
 
             //Create a new thread for the front end to push the file from the front end to the server

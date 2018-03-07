@@ -30,6 +30,13 @@ class TransferHelper implements Runnable {
         this.exists = exists;
     }
 
+    //Server -> FrontEnd
+    TransferHelper(int port, String type, String filename) {
+        this.port = port;
+        this.type = type;
+        this.filename = filename;
+    }
+
     //FrontEnd -> Client and FrontEnd -> Server
     TransferHelper(int port, String type) {
         this.port = port;
@@ -66,6 +73,10 @@ class TransferHelper implements Runnable {
                     break;
                 }
 
+                dis = new DataInputStream(socket.getInputStream());
+                dos = new DataOutputStream(socket.getOutputStream());
+                bis = new BufferedInputStream(socket.getInputStream());
+
                 receive();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -83,6 +94,7 @@ class TransferHelper implements Runnable {
                 if (type.equals("U")) {
                     upload();
                 } else if (type.equals("D")) {
+                    System.out.println("dwld command received");
                     push();
                 } else if (type.equals("R")) {
                     receive();
@@ -191,10 +203,6 @@ class TransferHelper implements Runnable {
         }
     }
 
-    private void download() {
-
-    }
-
     private void push() {
         int readBytes;
         byte[] buffer;
@@ -214,6 +222,8 @@ class TransferHelper implements Runnable {
             //Check file exists
             if (new File("files/" + filename).isFile()) {
                 System.out.println(filename);
+                System.out.println("qabgriqbfribqf");
+                System.out.println(filename);
                 uploadFile = new File("files/" + filename);
                 bfis = new BufferedInputStream(new FileInputStream(uploadFile));
                 byteOutputStream = new ByteArrayOutputStream();
@@ -231,7 +241,7 @@ class TransferHelper implements Runnable {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                System.out.println("file deleted from front end");
+                System.out.println("file not found!!!!");
                 return;
             }
 
@@ -250,17 +260,16 @@ class TransferHelper implements Runnable {
 
             socket.close();
 
+            if (listener != null) {
+                listener.close();
+            }
+
             //As multiple threads may be using the same file, all will run until last one using it deletes file
 //            while (uploadFile.exists()) {
 //                uploadFile.delete();
 //            }
 
         } catch (IOException e) {
-            try {
-                socket.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
             System.out.println("push error" + e.getMessage());
             //TODO
         }
@@ -330,7 +339,11 @@ class TransferHelper implements Runnable {
 
         try {
             socket.close();
-            listener.close();
+
+            if (listener != null) {
+                listener.close();
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -195,6 +195,26 @@ class Client {
                 return;
             }
 
+            try {
+                //Create the socket connection to handle the file transfer (only)
+                while (true) {
+                    try {
+                        socket = new Socket(host, 9090);
+                    } catch (ConnectException c) {
+                        continue;
+                    }
+                    break;
+                }
+
+                //Create the input and output streams for file transfer
+                dis = new DataInputStream(socket.getInputStream());
+                dos = new DataOutputStream(socket.getOutputStream());
+                bis = new BufferedInputStream(socket.getInputStream());
+                bos = new BufferedOutputStream(socket.getOutputStream());
+            } catch (IOException e) {
+                //TODO proper error handling
+            }
+
             //Send filename length and filename, receive filesize
             dos.writeInt(filename.length());
             dos.writeChars(filename);
@@ -344,7 +364,7 @@ class Client {
             bis = new BufferedInputStream(socket.getInputStream());
             bos = new BufferedOutputStream(socket.getOutputStream());
         } catch (IOException e) {
-
+            //TODO proper error handling
         }
 
         try {

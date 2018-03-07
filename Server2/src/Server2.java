@@ -34,7 +34,12 @@ public class Server2 implements ServerInterface {
         return listing;
     }
 
-    private download() {
+    public boolean download(int port, String filename) {
+        TransferHelper helper = new TransferHelper(port, "D", filename);
+        Thread thread = new Thread(helper);
+        thread.start();
+        System.out.println("download listener started on server");
+        return true;
     }
 
     public boolean receive(int port) {

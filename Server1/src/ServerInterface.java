@@ -12,7 +12,7 @@ interface ServerInterface extends Remote {
 
     ArrayList<String> list() throws RemoteException;
 
-    boolean download(int port) throws RemoteException;
+    boolean download(int port, String filename) throws RemoteException;
 
     boolean receive(int port) throws RemoteException;
 
