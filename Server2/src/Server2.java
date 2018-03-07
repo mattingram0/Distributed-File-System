@@ -9,18 +9,24 @@ import java.util.ArrayList;
 
 public class Server2 implements ServerInterface {
 
+    String ip; //IP address this server is running on, to allow for socket creation
+
+    @Override
+    public String getIpAddress() {
+        return this.ip;
+    }
+
     public int numFiles() {
-        return 0;
+        System.out.print("Number of Files on Server 2: ");
+        System.out.println(list().size());
+        return list().size();
     }
 
     public void ping() {
     }
 
-    public int checkSpace() throws RemoteException {
-        return 0;
-    }
 
-    public ArrayList<String> list() throws RemoteException {
+    public ArrayList<String> list() {
         ArrayList<String> listing = new ArrayList<>();
         File[] listOfFiles = new File("files/").listFiles();
 
@@ -34,7 +40,11 @@ public class Server2 implements ServerInterface {
     public void download() throws RemoteException {
     }
 
-    public void upload() throws RemoteException {
+    public boolean receive(int port) {
+        TransferHelper helper = new TransferHelper(port, "R");
+        Thread thread = new Thread(helper);
+        thread.start();
+        return true;
     }
 
     public void delete(String filename) throws RemoteException {

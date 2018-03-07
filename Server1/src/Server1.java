@@ -10,15 +10,20 @@ import java.util.ArrayList;
 
 public class Server1 implements ServerInterface {
 
+    String ip; //IP address this server is running on, to allow for socket creation
+
+    @Override
+    public String getIpAddress() {
+        return this.ip;
+    }
+
     public int numFiles() {
-        return 0;
+        System.out.print("Number of Files on Server 1: ");
+        System.out.println(list().size());
+        return list().size();
     }
 
     public void ping() throws RemoteException {
-    }
-
-    public int checkSpace() throws RemoteException {
-        return 0;
     }
 
     public ArrayList<String> list() {
@@ -35,10 +40,14 @@ public class Server1 implements ServerInterface {
     public void download() throws RemoteException {
     }
 
-    public void upload() throws RemoteException {
+    public boolean receive(int port) {
+        TransferHelper helper = new TransferHelper(port, "R");
+        Thread thread = new Thread(helper);
+        thread.start();
+        return true;
     }
 
-    public void delete(String filename) throws RemoteException {
+    public void delete(String filename) {
         if (new File("files/" + filename).delete()) {
             System.out.println("[+] " + filename + " deleted successfully from Server1");
         } else {
@@ -54,7 +63,6 @@ public class Server1 implements ServerInterface {
             if (System.getSecurityManager() == null) {
                 System.setSecurityManager(new SecurityManager());
             }
-
 
             //Create front end, add it to registry to be used by clients
             Server1 server1 = new Server1();

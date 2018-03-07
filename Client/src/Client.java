@@ -5,10 +5,7 @@ import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
+import java.util.*;
 
 public class Client {
 
@@ -193,6 +190,7 @@ public class Client {
             dos.writeInt(filename.length());
             dos.writeChars(filename);
             dos.flush();
+
             filesize = dis.readInt();
             bytesRemaining = filesize;
 
@@ -231,7 +229,7 @@ public class Client {
                 downloadTime = (endTime - startTime) / 1000000;
 
                 //If the correct number of bytes were received, write the file
-                if (buffer.length == filesize) {
+                if (totalBytes == filesize) {
                     if (new File(filename).isFile()) {
                         System.out.println("[*] File already exists locally, overwrite? (y/n)");
                         System.out.print("> ");
@@ -265,7 +263,13 @@ public class Client {
     }
 
     public void delete(Scanner scanner) throws TransferException {
+        String filename;
 
+        System.out.println("[*] Please enter filename to upload");
+        System.out.print("> ");
+        filename = scanner.nextLine();
+
+        frontEnd.delete(filename);
     }
 
     public void upload(Scanner scanner) throws TransferException {
@@ -282,6 +286,7 @@ public class Client {
         float endTime;
         float uploadTime;
         boolean reliable;
+        boolean exists = false;
 
         //Get filename
         try {
@@ -333,11 +338,6 @@ public class Client {
         }
 
         try {
-
-            //Send filename length and filename
-            dos.writeInt(uploadFile.getName().length());
-            dos.writeChars(uploadFile.getName());
-
             buffer = new byte[1024];
 
             //Read file into bytes buffer
@@ -350,16 +350,46 @@ public class Client {
         }
 
         try {
-            //Send file length
             buffer = byteOutputStream.toByteArray();
-            dos.writeInt(buffer.length);
 
+            //Send filename length and filename
+            dos.writeInt(filename.length());
+            dos.writeChars(filename);
+            dos.flush();
+
+            //Check if file exists or not before upload:
+            if (dis.readInt() == -1) {
+                exists = true;
+                System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
+                System.out.print("> ");
+
+                if (yesNo(scanner)) {
+                    dos.writeInt(0);
+                } else {
+                    dos.writeInt(-1);
+                    System.out.println("");
+                    return;
+                }
+
+            } else {
+                exists = false;
+            }
+
+            //read status
             status = dis.readInt(); //TODO BISBOS
             if (status == -1) {
                 throw new IOException();
             }
+
         } catch (IOException e) {
             System.out.println("[-] No okay received from server");
+        }
+
+        try {
+            //Send file length
+            dos.writeInt(buffer.length);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         //Send file over stream, in chunks 100 of the total length
@@ -403,24 +433,14 @@ public class Client {
             uploadTime = (endTime - startTime) / 1000000;
 
             if (bytesReceived == buffer.length) {
-                if (dis.readInt() == -1) {
-                    System.out.println("[*] File already exists on remote server, overwrite? (y/n)");
-                    System.out.print("> ");
-
-
-                    if (!yesNo(scanner)) {
-                        System.out.println("");
-                        return;
-                    }
-                }
-
                 System.out.println("[+] " + filename + " successfully uploaded: " + Integer.toString(buffer.length) + " bytes received in " + Float.toString(uploadTime) + "ms");
 
                 //If the upload to the front end was successful, push the uploads to the other servers.
-                frontEnd.push();
+                frontEnd.push(filename, exists, reliable);
             } else {
                 System.out.println("[-] " + filename + " not successfully uploaded: " + Integer.toString(bytesReceived) + "/" + Integer.toString(buffer.length) + " bytes received in" + Float.toString(uploadTime) + "ms");
             }
+
         } catch (IOException e) {
             System.out.println(e.getMessage());
             System.out.println("[-] Unable to read number of bytes received");
@@ -430,7 +450,7 @@ public class Client {
     }
 
     public void list() {
-        ArrayList<ArrayList<String>> listing;
+        Set<String> listing;
 
         try {
             listing = frontEnd.list();
@@ -438,10 +458,8 @@ public class Client {
             if (listing == null) {
                 System.out.println("[-] Server error, unable to retrieve directory listing");
             } else {
-                for (ArrayList<String> list : listing) {
-                    for (String file : list) {
-                        System.out.println(file); //TODO: TEST
-                    }
+                for (String file : listing) {
+                    System.out.println(file); //TODO: TEST
                 }
             }
         } catch (RemoteException e) {
