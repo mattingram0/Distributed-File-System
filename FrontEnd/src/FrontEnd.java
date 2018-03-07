@@ -60,6 +60,47 @@ public class FrontEnd implements FrontEndInterface {
         }
     }
 
+    //Delete file from all servers
+    public boolean delete(String filename) throws FileNotFoundException {
+        ServerList availableServers;
+        ArrayList<ServerInterface> listOfServers;
+        ArrayList<File> listOfAllFileLists;
+        ArrayList<ArrayList<String>> listOfListOfAllFiles;
+        boolean exists = false;
+
+        availableServers = checkStatus();
+        listOfServers = availableServers.getServers();
+        listOfAllFileLists = new ArrayList<>(Arrays.asList(fileList1, fileList2, fileList3));
+        listOfListOfAllFiles = getCorrectFiles(listOfAllFileLists);
+
+        //Ensure there are servers available
+        if (listOfServers.size() == 0) {
+            return false;
+        }
+
+        //Update the necessary servers
+        if (changedState) {
+            updateServers(availableServers);
+        }
+
+        //Check to see if filename exists on any of the servers:
+        for (ArrayList<String> filesOnServer : listOfListOfAllFiles) {
+            if (filesOnServer.contains(filename)) {
+                exists = true;
+            }
+        }
+
+        if (exists) {
+            if (remove(filename, listOfServers)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            throw new FileNotFoundException();
+        }
+    }
+
     //Upload a file to front end server
     public boolean upload(int port, String filename, boolean reliable) {
         ServerList availableServers;
@@ -99,6 +140,37 @@ public class FrontEnd implements FrontEndInterface {
         return true;
     }
 
+    //This function deletes the file off all the available servers it exists on, and if it exists
+    // on a server that is not up, delete it from its file list, which will then be processed when
+    //the server next comes online by the updateServers() method
+    public boolean remove(String filename, ArrayList<ServerInterface> listOfAvailableServers) {
+        ArrayList<ServerInterface> listOfAllServers;
+        ArrayList<ArrayList<String>> listOfListOfAllFiles;
+        ArrayList<File> listOfAllFileLists;
+
+        listOfAllFileLists = new ArrayList<>(Arrays.asList(fileList1, fileList2, fileList3));
+        listOfAllServers = new ArrayList<>(Arrays.asList(server1, server2, server3));
+        listOfListOfAllFiles = getCorrectFiles(listOfAllFileLists);
+
+        System.out.println("File exists");
+        for (int i = 0; i < 3; i++) {
+            if (listOfListOfAllFiles.get(i).contains(filename)) {
+                System.out.println("Server: " + Integer.toString(i) + " contains file");
+                if (listOfAvailableServers.contains(listOfAllServers.get(i))) {
+                    System.out.println("This should execute");
+                    try {
+                        listOfAllServers.get(i).delete(filename);
+                    } catch (RemoteException e) {
+                        return false;
+                    }
+                }
+                System.out.println(listOfListOfAllFiles);
+                removeFileFromList(listOfAllFileLists.get(i), listOfListOfAllFiles.get(i), filename);
+            }
+        }
+        return true;
+    }
+
     //Push the files to one or many servers
     public void push(String filename, boolean exists, boolean reliable) {
         ServerList availableServers;
@@ -107,10 +179,6 @@ public class FrontEnd implements FrontEndInterface {
         File emptiestServerList = null;
         ArrayList<String> emptiestServerFiles = null;
 
-        ArrayList<ServerInterface> listOfAllServers;
-        ArrayList<ArrayList<String>> listOfListOfAllFiles;
-        ArrayList<File> listOfAllFileLists;
-
         ArrayList<ServerInterface> listOfAvailableServers;
         ArrayList<File> listOfAllAvailableFileLists;
         ArrayList<ArrayList<String>> listOfListOfAllAvailableFiles;
@@ -118,38 +186,16 @@ public class FrontEnd implements FrontEndInterface {
         int numFiles;
         int minimum = Integer.MAX_VALUE;
 
-        //Don't update servers as this is only called if the upload() succeeds
-
-        availableServers = checkStatus();
+        //(Don't update servers as push() is only called if the upload() succeeds)
 
         //Get the AVAILABLE servers
+        availableServers = checkStatus();
         listOfAvailableServers = availableServers.getServers();
 
-        //Get all the servers, their filelists, and the files within these filelists
-        listOfAllServers = new ArrayList<>(Arrays.asList(server1, server2, server3));
-        listOfAllFileLists = new ArrayList<>(Arrays.asList(fileList1, fileList2, fileList3));
-        listOfListOfAllFiles = getCorrectFiles(listOfAllFileLists);
-
-        //If the file already exists and the user wants to overwrite, delete the file off all servers it exists on
-        //If it exists on a server that is not up, delete it from its file list, which will then be processed when
-        //the server next comes online by the updateServers() method
+        //If the file exists already (and the user wants to overwrite), remove the file
         if (exists) {
-            System.out.println("File exists");
-            for (int i = 0; i < 3; i++) {
-                if (listOfListOfAllFiles.get(i).contains(filename)) {
-                    System.out.println("Server: " + Integer.toString(i) + " contains file");
-                    if (listOfAvailableServers.contains(listOfAllServers.get(i))) {
-                        System.out.println("This should execute");
-                        try {
-                            listOfAllServers.get(i).delete(filename);
-                        } catch (RemoteException e) {
-                            e.printStackTrace();
-                            //TODO handle this exception
-                        }
-                    }
-                    System.out.println(listOfListOfAllFiles);
-                    removeFileFromList(listOfAllFileLists.get(i), listOfListOfAllFiles.get(i), filename);
-                }
+            if (!remove(filename, listOfAvailableServers)) {
+                //TODO handle this - TURN PUSH INTO A BOOLEAN!!
             }
         }
 

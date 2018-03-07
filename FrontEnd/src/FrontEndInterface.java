@@ -1,3 +1,5 @@
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -10,5 +12,7 @@ public interface FrontEndInterface extends Remote {
     boolean upload(int port, String filename, boolean reliable) throws RemoteException;
 
     void push(String filename, boolean exists, boolean reliable) throws RemoteException;
+
+    boolean delete(String filename) throws RemoteException, FileNotFoundException;
 
 }

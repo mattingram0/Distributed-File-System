@@ -265,11 +265,21 @@ public class Client {
     public void delete(Scanner scanner) throws TransferException {
         String filename;
 
-        System.out.println("[*] Please enter filename to upload");
+        System.out.println("[*] Please enter filename to delete");
         System.out.print("> ");
         filename = scanner.nextLine();
 
-        frontEnd.delete(filename);
+        try {
+            if (frontEnd.delete(filename)) {
+                System.out.println("[+] File deleted successfully");
+            } else {
+                throw new RemoteException();
+            }
+        } catch (RemoteException e) {
+            System.out.println("[-] Server error whilst deleting file, file not deleted");
+        } catch (FileNotFoundException f) {
+            System.out.println("[-] File does not exist on the server");
+        }
     }
 
     public void upload(Scanner scanner) throws TransferException {
