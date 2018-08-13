@@ -21,27 +21,27 @@ Please then note the following:
   * [registry_host] should likely be 127.0.0.1, [registry_port] any available port
 
 * To run:
-  1. To start the registry from any location, run: 
+1. To start the registry from any location, run: 
 
 ```
 rmiregistry -J-Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" [registry_port] &
 ```
 
-  2. To start the client, navigate to /[PATH]/out/Client/files/, run:
+2. To start the client, navigate to /[PATH]/out/Client/files/, run:
 
 ```
 java -jar -Djava.security.policy=client.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" ../Client.jar [registry_host] [registry_port]
 ```
 
-  3. To start the front end, navigate to /[PATH]/out/FrontEnd/, run:
+3. To start the front end, navigate to /[PATH]/out/FrontEnd/, run:
 ```
 :~ java -jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" FrontEnd.jar [registry_host] [registry_port]
 ```
 
-  4. To start the three servers, navigate to /[PATH]/out/Server[1,2,3]/, run:
+4. To start the three servers, navigate to /[PATH]/out/Server[1,2,3]/, run:
 
 ```
 java -jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" Server[1,2,3].jar [registry_host] [registry_port]
 ```
 
-- I compiled this program using IntelliJ. If you need to recompile, please load the source code into IntelliJ as a project, and rebuild the artefacts.
+* I compiled this program using IntelliJ. If you need to recompile, please load the source code into IntelliJ as a project, and rebuild the artefacts.
