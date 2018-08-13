@@ -12,8 +12,7 @@ git clone https://github.com/mattingram0/Distributed-File-System.git
 ```
 
 ## Running
-* /out/ contains the compiled files
-* /src/ contains the source code
+/out/ contains the compiled files. All other files in the root directory hold the source code.
 
 * Sockets use ports 9090 - 9093 (inclusive). From here on, [PATH] is the path to the /Distributed-File-System/ directory. **Please ensure you REPLACE any spaces in the path with %20**: /Example Path/ -> /Example%20Path/
 Please then note the following:
@@ -25,24 +24,24 @@ Please then note the following:
 1. To start the registry from any location, run: 
 
 ```
-rmiregistry -J-Djava.rmi.server.codebase="file:/[PATH]/Distributed%20Systems/out/FrontEnd/FrontEnd.jar" [registry_port] &
+rmiregistry -J-Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" [registry_port] &
 ```
 
-2. To start the client, navigate to /[PATH]/Distributed%20Systems/out/Client/files/, run:
+2. To start the client, navigate to /[PATH]/out/Client/files/, run:
 
 ```
-java -jar -Djava.security.policy=client.policy -Djava.rmi.server.codebase="file:/[PATH]/Distributed%20Systems/out/FrontEnd/FrontEnd.jar" ../Client.jar [registry_host] [registry_port]
+java -jar -Djava.security.policy=client.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" ../Client.jar [registry_host] [registry_port]
 ```
 
-3. To start the front end, navigate to /[PATH]/Distributed%20Systems/out/FrontEnd/, run:
+3. To start the front end, navigate to /[PATH]/out/FrontEnd/, run:
 ```
-:~ java -jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase="file:/[PATH]/Distributed%20Systems/out/FrontEnd/FrontEnd.jar" FrontEnd.jar [registry_host] [registry_port]
-```
-
-4. To start the three servers, navigate to /[PATH]/Distributed%20Systems/out/Server[1,2,3]/, run:
-
-```
-java -jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase="file:/[PATH]/Distributed%20Systems/out/FrontEnd/FrontEnd.jar" Server[1,2,3].jar [registry_host] [registry_port]
+:~ java -jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" FrontEnd.jar [registry_host] [registry_port]
 ```
 
-- I compiled this program using IntelliJ. If you need to recompile, please load /src/ into IntelliJ as a project, and rebuild the artefacts.
+4. To start the three servers, navigate to /[PATH]/out/Server[1,2,3]/, run:
+
+```
+java -jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" Server[1,2,3].jar [registry_host] [registry_port]
+```
+
+- I compiled this program using IntelliJ. If you need to recompile, please load the source code into IntelliJ as a project, and rebuild the artefacts.
