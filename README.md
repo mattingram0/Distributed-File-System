@@ -27,7 +27,7 @@ Please then note the following:
 rmiregistry -J-Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" [registry_port] &
 ```
 
-  2. To start the client, navigate to /[PATH]/out/Client/files/, run:
+    2. To start the client, navigate to /[PATH]/out/Client/files/, run:
 
 ```
 java -jar -Djava.security.policy=client.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" ../Client.jar [registry_host] [registry_port]
