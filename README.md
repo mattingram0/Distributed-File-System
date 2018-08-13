@@ -22,13 +22,11 @@ Please then note the following:
 
 * To run:
   1. To start the registry from any location, run: 
-```
-rmiregistry -J-Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" [registry_port] &
-```
+        rmiregistry -J-Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" [registry_port] &
+
   2. To start the client, navigate to /[PATH]/out/Client/files/, run:
-```
-java -jar -Djava.security.policy=client.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" ../Client.jar [registry_host] [registry_port]
-```
+        java -jar -Djava.security.policy=client.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" ../Client.jar [registry_host] [registry_port]
+
   3. To start the front end, navigate to /[PATH]/out/FrontEnd/, run:
 ```
 :~ java -jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" FrontEnd.jar [registry_host] [registry_port]
