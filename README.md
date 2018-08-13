@@ -21,9 +21,12 @@ Please then note the following:
   * [registry_host] should likely be 127.0.0.1, [registry_port] any available port
 
 * To run:
-  1. To start the registry from any location, run: 
+  1. To start the registry from any location, run:
+  
+        ```
         rmiregistry -J-Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" [registry_port] &
-
+        ```
+        
   2. To start the client, navigate to /[PATH]/out/Client/files/, run:
         java -jar -Djava.security.policy=client.policy -Djava.rmi.server.codebase="file:/[PATH]/out/FrontEnd/FrontEnd.jar" ../Client.jar [registry_host] [registry_port]
 
