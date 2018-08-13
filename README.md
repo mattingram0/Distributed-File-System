@@ -45,3 +45,4 @@ Please then note the following:
         ```
 
 * I compiled this program using IntelliJ. If you need to recompile, please load the source code into IntelliJ as a project, and rebuild the artefacts.
+* The user-interface should be instructive and intuitive to follow 
